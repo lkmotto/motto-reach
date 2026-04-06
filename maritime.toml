@@ -1,0 +1,21 @@
+[agent]
+name        = "motto-distribution"
+framework   = "custom"
+tier        = "smart"
+description = "Multi-platform content distribution for Motto Appraisal Service"
+
+[triggers]
+webhook = true
+
+[env]
+PORT                 = "8080"
+ANTHROPIC_API_KEY    = ""
+BEEHIIV_API_KEY      = ""
+BEEHIIV_PUB_ID       = "pub_6b0e21de-3244-40cb-a06c-b56c603e28fc"
+X_CLIENT_ID          = "TnNV0TB0LW1KS0V0TDBucjhhSDY6MTpjaQ"
+POST_TO_COMPANY_PAGE = "false"
+REDDIT_AUTO_POST     = "false"
+REDDIT_USERNAME      = "Opposite_Ground594"
+AUTO_POST_X          = "false"
+LOG_DIR              = "/app/logs"
+STATE_DIR            = "/app/state"
