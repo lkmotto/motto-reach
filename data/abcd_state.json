@@ -1,0 +1,14 @@
+{
+  "dm": {
+    "A": {"alpha": 2, "beta": 5, "sends": 1, "replies": 0},
+    "B": {"alpha": 2, "beta": 5, "sends": 1, "replies": 0},
+    "C": {"alpha": 2, "beta": 5, "sends": 1, "replies": 0},
+    "D": {"alpha": 2, "beta": 5, "sends": 0, "replies": 0}
+  },
+  "comment": {
+    "A": {"alpha": 1, "beta": 1, "sends": 0, "replies": 0},
+    "B": {"alpha": 1, "beta": 1, "sends": 0, "replies": 0},
+    "C": {"alpha": 1, "beta": 1, "sends": 0, "replies": 0},
+    "D": {"alpha": 1, "beta": 1, "sends": 0, "replies": 0}
+  }
+}

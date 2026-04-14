@@ -1,0 +1,30 @@
+{
+  "first_run_date": "2026-04-13",
+  "days_running": 1,
+  "total_reddit_dms": 3,
+  "total_reddit_comments": 0,
+  "total_x_replies": 0,
+  "seen_ids": [
+    "1skn3n1",
+    "1skl4ao",
+    "1skq2bo",
+    "1skoz7x",
+    "1skpwak"
+  ],
+  "sent_to": [
+    "Sarahbeth822",
+    "doobylive",
+    "Scumpop"
+  ],
+  "x_seen_ids": [],
+  "today_dms": 3,
+  "today_comments": 0,
+  "today_x_replies": 0,
+  "last_count_reset": "2026-04-13",
+  "last_run": "2026-04-13T23:56:00+00:00",
+  "last_report_date": "2026-04-13",
+  "account_health": {
+    "reddit": "active",
+    "x": "no_session"
+  }
+}
