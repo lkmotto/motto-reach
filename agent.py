@@ -97,7 +97,7 @@ def reset_daily_counts_if_new_day(state: dict) -> dict:
     return state
 
 
-def run_cycle(dry_run: bool = False):
+def run_cycle(dry_run: bool = False):  # noqa: C901
     """Execute one full 2-hour outreach cycle."""
     from ollama_client import available as ollama_available, draft_dm, draft_comment, draft_x_reply, draft_conversation_reply
     from abcd import sample_variant, record_send, record_reply, get_status, format_report
