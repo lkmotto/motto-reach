@@ -5,6 +5,8 @@ Scans Reddit + X, drafts via Ollama, sends with ABCD variants, reports by email.
 Usage: python3 agent.py --cycle
 Cron:  0 */2 * * * cd /opt/motto-outreach && python3 agent.py --cycle
 """
+import sentry_init  # noqa: E402,F401
+
 import os, sys, json, time, random, logging, argparse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -331,21 +333,27 @@ def run_sharpener():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cycle",    action="store_true", help="Run one outreach cycle")
-    parser.add_argument("--sharpen",  action="store_true", help="Run daily sharpener analysis")
-    parser.add_argument("--dry-run",  action="store_true", help="Scan but don't send")
-    parser.add_argument("--status",   action="store_true", help="Print current state and ABCD status")
-    args = parser.parse_args()
+    import sentry_sdk as _sentry_sdk
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--cycle",    action="store_true", help="Run one outreach cycle")
+        parser.add_argument("--sharpen",  action="store_true", help="Run daily sharpener analysis")
+        parser.add_argument("--dry-run",  action="store_true", help="Scan but don't send")
+        parser.add_argument("--status",   action="store_true", help="Print current state and ABCD status")
+        args = parser.parse_args()
 
-    if args.status:
-        from abcd import format_report
-        state = load_state()
-        print(json.dumps(state, indent=2))
-        print("\n" + format_report("dm"))
-    elif args.sharpen:
-        run_sharpener()
-    elif args.cycle or args.dry_run:
-        run_cycle(dry_run=args.dry_run)
-    else:
-        parser.print_help()
+        if args.status:
+            from abcd import format_report
+            state = load_state()
+            print(json.dumps(state, indent=2))
+            print("\n" + format_report("dm"))
+        elif args.sharpen:
+            run_sharpener()
+        elif args.cycle or args.dry_run:
+            run_cycle(dry_run=args.dry_run)
+        else:
+            parser.print_help()
+    except Exception as _exc:
+        _sentry_sdk.capture_exception(_exc)
+        raise
+

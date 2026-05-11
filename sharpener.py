@@ -7,6 +7,8 @@ with lessons learned so each day's outreach is smarter than the last.
 Usage: python3 sharpener.py
 Cron:  0 11 * * * cd /opt/motto-outreach && python3 sharpener.py
 """
+import sentry_init  # noqa: E402,F401
+
 import json, sys, logging
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -314,4 +316,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sentry_sdk as _sentry_sdk
+    try:
+        main()
+    except Exception as _exc:
+        _sentry_sdk.capture_exception(_exc)
+        raise
+
