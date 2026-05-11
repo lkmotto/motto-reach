@@ -3,6 +3,19 @@
 Thanks for contributing! Please follow the conventions below so that
 automated tooling (release-please, changelog generation) keeps working.
 
+## Pre-commit hooks
+
+This repository uses [pre-commit](https://pre-commit.com/) to run
+linting and security checks on staged changes. Install it and activate
+the hooks with:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+After installation, the hooks will run automatically on every `git commit`.
+
 ## Conventional Commits
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)
