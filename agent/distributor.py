@@ -19,7 +19,9 @@ Usage:
 """
 
 from __future__ import annotations
-import sys as _sys, pathlib as _pathlib  # noqa: E402
+import sys as _sys  # noqa: E402
+import pathlib as _pathlib  # noqa: E402
+
 _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
 import sentry_init  # noqa: E402,F401
 
@@ -39,21 +41,20 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from tools.classifier import classify
-from tools.transformer import transform
-from tools.queue import (
+from tools.classifier import classify  # noqa: E402
+from tools.transformer import transform  # noqa: E402
+from tools.queue import (  # noqa: E402
     add_to_queue,
     mark_posted,
     mark_failed,
     mark_skipped,
     get_stats,
 )
-from tools.x_poster import safe_post_tweet, safe_post_thread, is_auto_post_enabled
-from tools.beehiiv_publisher import create_post, markdown_to_html
-from tools.linkedin_company import post_to_company_page, rephrase_for_brand
-from tools.reddit_poster import queue_for_subreddits
-from tools.linkedin_groups import queue_for_groups
-from tools.facebook_groups import queue_for_manual_review as queue_fb_groups
+from tools.x_poster import safe_post_tweet, safe_post_thread, is_auto_post_enabled  # noqa: E402
+from tools.beehiiv_publisher import create_post, markdown_to_html  # noqa: E402
+from tools.linkedin_company import post_to_company_page, rephrase_for_brand  # noqa: E402
+from tools.reddit_poster import queue_for_subreddits  # noqa: E402
+from tools.linkedin_groups import queue_for_groups  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -67,6 +68,7 @@ RESULTS_DIR = Path("/home/user/workspace/cron_tracking/results")
 # ---------------------------------------------------------------------------
 # Logging helpers
 # ---------------------------------------------------------------------------
+
 
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -106,6 +108,7 @@ def _init_log_run(post_urn: str, pillar: int) -> None:
 # Results persistence
 # ---------------------------------------------------------------------------
 
+
 def _save_results(post_urn: str, results: dict) -> Path:
     """Save full transform + distribution results to a JSON file."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -121,6 +124,7 @@ def _save_results(post_urn: str, results: dict) -> Path:
 # ---------------------------------------------------------------------------
 # Platform queueing helpers
 # ---------------------------------------------------------------------------
+
 
 def _queue_x_posts(
     post_urn: str,
@@ -146,7 +150,10 @@ def _queue_x_posts(
             platform="x_post",
             content=tweet_text,
             requires_review=False,
-            metadata={"tweet_index": i, "pillar": transform_output.get("CONTENT_CLASSIFICATION", {})},
+            metadata={
+                "tweet_index": i,
+                "pillar": transform_output.get("CONTENT_CLASSIFICATION", {}),
+            },
         )
         queued_single.append(item_id)
 
@@ -179,7 +186,10 @@ def _queue_x_posts(
                 results = safe_post_thread(x_thread)
                 mark_posted(item_id, {"thread": results})
                 posted.extend(results)
-                _log_entry("X thread posted", f"{len(results)} tweets — {results[0].get('url', '')}")
+                _log_entry(
+                    "X thread posted",
+                    f"{len(results)} tweets — {results[0].get('url', '')}",
+                )
             except Exception as e:
                 mark_failed(item_id, str(e))
                 _log_entry("X thread FAILED", str(e))
@@ -193,7 +203,9 @@ def _queue_x_posts(
     }
 
 
-def _queue_beehiiv(post_urn: str, beehiiv_version: Optional[dict], pillar: int) -> Optional[str]:
+def _queue_beehiiv(
+    post_urn: str, beehiiv_version: Optional[dict], pillar: int
+) -> Optional[str]:
     """
     Create a Beehiiv draft from the generated newsletter version.
     Always creates as draft — never sends.
@@ -236,7 +248,9 @@ def _queue_beehiiv(post_urn: str, beehiiv_version: Optional[dict], pillar: int) 
             status="draft",
         )
         mark_posted(item_id, result)
-        _log_entry("Beehiiv draft created", f"ID: {result.get('id', 'unknown')} — {subject}")
+        _log_entry(
+            "Beehiiv draft created", f"ID: {result.get('id', 'unknown')} — {subject}"
+        )
         return result.get("id")
     except Exception as e:
         mark_failed(item_id, str(e))
@@ -272,6 +286,7 @@ def _queue_review_item(
 # Step 6: Company page post
 # ---------------------------------------------------------------------------
 
+
 def _post_to_company_page(
     post_text: str,
     pillar: int,
@@ -293,7 +308,9 @@ def _post_to_company_page(
         brand_text = rephrase_for_brand(post_text, pillar)
 
         if not brand_text:
-            _log_entry("Company page SKIPPED", "rephrase_for_brand returned empty string")
+            _log_entry(
+                "Company page SKIPPED", "rephrase_for_brand returned empty string"
+            )
             return None
 
         result = post_to_company_page(
@@ -325,6 +342,7 @@ def _post_to_company_page(
 # ---------------------------------------------------------------------------
 # Step 7: Community content queueing
 # ---------------------------------------------------------------------------
+
 
 def _queue_community_content(  # noqa: C901
     post_data: dict,
@@ -366,7 +384,9 @@ def _queue_community_content(  # noqa: C901
                 title=title,
                 source_post_urn=post_urn,
                 pillar=pillar,
-                reddit_version=reddit_version if isinstance(reddit_version, dict) else None,
+                reddit_version=reddit_version
+                if isinstance(reddit_version, dict)
+                else None,
             )
             counts["reddit"] = len(item_ids)
             _log_entry("Reddit items queued", str(counts["reddit"]))
@@ -383,7 +403,9 @@ def _queue_community_content(  # noqa: C901
         discussion_question = None
 
         if isinstance(li_group_version, dict):
-            group_safe_text = li_group_version.get("body", li_group_version.get("text", ""))
+            group_safe_text = li_group_version.get(
+                "body", li_group_version.get("text", "")
+            )
             discussion_question = li_group_version.get("discussion_question")
         elif isinstance(li_group_version, str):
             group_safe_text = li_group_version
@@ -417,7 +439,10 @@ def _queue_community_content(  # noqa: C901
         final_fb_text = fb_text or post_text
 
         # Build a list of relevant group entries and queue each
-        from tools.facebook_groups import RELEVANT_GROUP_TYPES, queue_for_manual_review as _fb_queue
+        from tools.facebook_groups import (
+            RELEVANT_GROUP_TYPES,
+            queue_for_manual_review as _fb_queue,
+        )
 
         fb_item_ids: list[str] = []
         for group_name in RELEVANT_GROUP_TYPES:
@@ -445,6 +470,7 @@ def _queue_community_content(  # noqa: C901
 # ---------------------------------------------------------------------------
 # Main orchestrator
 # ---------------------------------------------------------------------------
+
 
 def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C901
     """
@@ -508,7 +534,9 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
         _log_entry("Public feed safe", str(content_class["public_feed_safe"]))
         _log_entry("Subreddit safe", str(content_class["subreddit_safe"]))
         _log_entry("Long form safe", str(content_class["long_form_safe"]))
-        _log_entry("Recommended platforms", ", ".join(content_class["recommended_platforms"]))
+        _log_entry(
+            "Recommended platforms", ", ".join(content_class["recommended_platforms"])
+        )
     except Exception as e:
         error_msg = f"Classification failed: {e}"
         summary["errors"].append(error_msg)
@@ -583,7 +611,9 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
             summary["errors"].append(error_msg)
             _log(f"❌ {error_msg}")
     else:
-        _log("_No Beehiiv content generated (long_form_safe=False and outreach_snippet_safe=False)_")
+        _log(
+            "_No Beehiiv content generated (long_form_safe=False and outreach_snippet_safe=False)_"
+        )
 
     # ------------------------------------------------------------------
     # Step 5: Manual review queue (Reddit, Facebook, LinkedIn groups)
@@ -595,36 +625,44 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
     # LinkedIn Group
     if transform_output.get("LINKEDIN_GROUP_VERSION"):
         item_id = _queue_review_item(
-            post_urn, "linkedin_group",
+            post_urn,
+            "linkedin_group",
             transform_output["LINKEDIN_GROUP_VERSION"],
-            pillar, "LINKEDIN_GROUP_VERSION"
+            pillar,
+            "LINKEDIN_GROUP_VERSION",
         )
         review_items.append(item_id)
 
     # Facebook Group
     if transform_output.get("FACEBOOK_GROUP_VERSION"):
         item_id = _queue_review_item(
-            post_urn, "facebook_group",
+            post_urn,
+            "facebook_group",
             transform_output["FACEBOOK_GROUP_VERSION"],
-            pillar, "FACEBOOK_GROUP_VERSION"
+            pillar,
+            "FACEBOOK_GROUP_VERSION",
         )
         review_items.append(item_id)
 
     # Reddit Post
     if transform_output.get("REDDIT_POST_VERSION"):
         item_id = _queue_review_item(
-            post_urn, "reddit",
+            post_urn,
+            "reddit",
             transform_output["REDDIT_POST_VERSION"],
-            pillar, "REDDIT_POST_VERSION"
+            pillar,
+            "REDDIT_POST_VERSION",
         )
         review_items.append(item_id)
 
     # Reddit Comment
     if transform_output.get("REDDIT_COMMENT_VERSION"):
         item_id = _queue_review_item(
-            post_urn, "reddit",
+            post_urn,
+            "reddit",
             transform_output["REDDIT_COMMENT_VERSION"],
-            pillar, "REDDIT_COMMENT_VERSION"
+            pillar,
+            "REDDIT_COMMENT_VERSION",
         )
         review_items.append(item_id)
 
@@ -636,9 +674,7 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
     ]:
         if transform_output.get(section):
             item_id = _queue_review_item(
-                post_urn, platform,
-                transform_output[section],
-                pillar, section
+                post_urn, platform, transform_output[section], pillar, section
             )
             review_items.append(item_id)
 
@@ -664,7 +700,9 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
     # ------------------------------------------------------------------
     _log_section("Step 7: Community Content Queuing")
     try:
-        community_counts = _queue_community_content(post_data, transform_output, content_class)
+        community_counts = _queue_community_content(
+            post_data, transform_output, content_class
+        )
         summary["queued"]["community"] = community_counts
         _log_entry(
             "Community totals",
@@ -727,6 +765,7 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C90
 
 if __name__ == "__main__":
     import sentry_sdk as _sentry_sdk
+
     try:
         import argparse
 
@@ -787,8 +826,12 @@ if __name__ == "__main__":
             sys.exit(0)
 
         print(f"Starting distribution for post: {post_data['post_urn']}")
-        print(f"Pillar: {post_data.get('pillar', 1)} | AUTO_POST_X: {is_auto_post_enabled()}")
-        print(f"POST_TO_COMPANY_PAGE: {os.environ.get('POST_TO_COMPANY_PAGE', 'false')}")
+        print(
+            f"Pillar: {post_data.get('pillar', 1)} | AUTO_POST_X: {is_auto_post_enabled()}"
+        )
+        print(
+            f"POST_TO_COMPANY_PAGE: {os.environ.get('POST_TO_COMPANY_PAGE', 'false')}"
+        )
         print("─" * 60)
 
         result = distribute(post_data, auto_post_x=args.auto_post_x)
@@ -797,8 +840,12 @@ if __name__ == "__main__":
         print("\n✓ Distribution complete")
         print(f"  Cost: ${result['transform_cost'].get('total_estimated_usd', 0):.4f}")
         print(f"  Review items: {len(result['queued']['review_items'])}")
-        print(f"  Community queued: Reddit={community.get('reddit', 0)}, LI Groups={community.get('linkedin_groups', 0)}, FB Groups={community.get('facebook_groups', 0)}")
-        print(f"  Company page: {'posted' if result.get('company_page', {}) and result['company_page'].get('success') else 'skipped/failed'}")
+        print(
+            f"  Community queued: Reddit={community.get('reddit', 0)}, LI Groups={community.get('linkedin_groups', 0)}, FB Groups={community.get('facebook_groups', 0)}"
+        )
+        print(
+            f"  Company page: {'posted' if result.get('company_page', {}) and result['company_page'].get('success') else 'skipped/failed'}"
+        )
         print(f"  Posted: {len(result['posted'])}")
         print(f"  Errors: {len(result['errors'])}")
         print(f"  Results: {result.get('results_file', 'not saved')}")
@@ -810,4 +857,3 @@ if __name__ == "__main__":
     except Exception as _exc:
         _sentry_sdk.capture_exception(_exc)
         raise
-

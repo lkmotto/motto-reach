@@ -16,15 +16,16 @@ from typing import TypedDict
 # Type definitions
 # ---------------------------------------------------------------------------
 
+
 class ContentClass(TypedDict):
-    public_feed_safe: bool           # OK for LinkedIn/X/Facebook public
-    group_safe: bool                 # OK for LinkedIn/Facebook groups (less promotional)
-    subreddit_safe: bool             # Could fit in a subreddit (educational, not marketing)
-    long_form_safe: bool             # Has enough depth for Medium/Substack/Beehiiv article
-    short_form_video_safe: bool      # Could become a 15–30 s video script
-    outreach_snippet_safe: bool      # Contains a hook or insight usable in cold outreach
-    sms_followup_safe: bool          # Could work as a warm follow-up after prior contact
-    promotion_risk_level: str        # "low" | "medium" | "high"
+    public_feed_safe: bool  # OK for LinkedIn/X/Facebook public
+    group_safe: bool  # OK for LinkedIn/Facebook groups (less promotional)
+    subreddit_safe: bool  # Could fit in a subreddit (educational, not marketing)
+    long_form_safe: bool  # Has enough depth for Medium/Substack/Beehiiv article
+    short_form_video_safe: bool  # Could become a 15–30 s video script
+    outreach_snippet_safe: bool  # Contains a hook or insight usable in cold outreach
+    sms_followup_safe: bool  # Could work as a warm follow-up after prior contact
+    promotion_risk_level: str  # "low" | "medium" | "high"
     manual_review_required: bool
     recommended_subreddits: list[str]
     recommended_platforms: list[str]
@@ -109,7 +110,7 @@ def _has_specific_data(text: str) -> bool:
     return bool(
         _DOLLAR_RE.search(text)
         or _PERCENT_RE.search(text)
-        or re.search(r"\b\d{4}\b", text)          # years / specific numbers
+        or re.search(r"\b\d{4}\b", text)  # years / specific numbers
         or re.search(r"\d+[\s]?(?:units|homes|listings|days)", text, re.I)
     )
 
@@ -125,12 +126,15 @@ def _count_points(text: str) -> int:
 # Subreddit recommendation helper
 # ---------------------------------------------------------------------------
 
+
 def _recommend_subreddits(pillar: int, text: str, subreddit_safe: bool) -> list[str]:
     if not subreddit_safe:
         return []
     base = list(PILLAR_SUBREDDITS.get(pillar, ["r/realestateinvesting"]))
     # Add geography hints if DFW is mentioned
-    if re.search(r"\b(DFW|Dallas|Fort Worth|Tarrant|Collin|Denton|Frisco|McKinney)\b", text, re.I):
+    if re.search(
+        r"\b(DFW|Dallas|Fort Worth|Tarrant|Collin|Denton|Frisco|McKinney)\b", text, re.I
+    ):
         for sub in ["r/DFW", "r/Dallas"]:
             if sub not in base:
                 base.append(sub)
@@ -140,6 +144,7 @@ def _recommend_subreddits(pillar: int, text: str, subreddit_safe: bool) -> list[
 # ---------------------------------------------------------------------------
 # Platform recommendation helper
 # ---------------------------------------------------------------------------
+
 
 def _recommend_platforms(
     public_feed_safe: bool,
@@ -165,6 +170,7 @@ def _recommend_platforms(
 # ---------------------------------------------------------------------------
 # Main classifier
 # ---------------------------------------------------------------------------
+
 
 def classify(post: dict) -> ContentClass:
     """
@@ -223,9 +229,7 @@ def classify(post: dict) -> ContentClass:
     # ---- short_form_video_safe -----------------------------------------------
     # Concrete tip, comparison, or data point that condenses into 15–30 s
     short_form_video_safe = (
-        has_data
-        and char_count <= 1200
-        and pillar in {1, 2, 3, 4, 6}
+        has_data and char_count <= 1200 and pillar in {1, 2, 3, 4, 6}
     )
 
     # ---- outreach_snippet_safe -----------------------------------------------
@@ -243,8 +247,8 @@ def classify(post: dict) -> ContentClass:
     # ---- manual_review_required ----------------------------------------------
     # Anything that touches groups/Reddit or has medium/high promo risk
     manual_review_required = (
-        group_safe             # group versions need human eyes
-        or subreddit_safe      # Reddit requires practitioner framing
+        group_safe  # group versions need human eyes
+        or subreddit_safe  # Reddit requires practitioner framing
         or promotion_risk_level in ("medium", "high")
     )
 
@@ -274,7 +278,6 @@ def classify(post: dict) -> ContentClass:
 
 if __name__ == "__main__":
     import json
-    import sys
 
     sample = {
         "post_text": (

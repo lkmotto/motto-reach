@@ -24,7 +24,6 @@ Approved subreddits for Motto Appraisal content:
   r/dfw — local market data
 """
 
-import os
 import json
 import logging
 import uuid
@@ -100,7 +99,9 @@ def _save_queue(queue: list) -> None:
     QUEUE_PATH.write_text(json.dumps(queue, indent=2))
 
 
-def _build_posting_instructions(subreddit: str, title: str, body: str, flair: Optional[str]) -> str:
+def _build_posting_instructions(
+    subreddit: str, title: str, body: str, flair: Optional[str]
+) -> str:
     """Build a copy-paste ready posting instruction block."""
     clean_sub = subreddit.lstrip("r/")
     flair_line = f"\n7. Flair: {flair}" if flair else "\n7. Flair: (none)"
@@ -164,7 +165,9 @@ def add_to_review_queue(
             "flair": flair,
             "review_notes": review_notes,
             "promotion_risk": promotion_risk,
-            "posting_instructions": _build_posting_instructions(subreddit, title, body, flair),
+            "posting_instructions": _build_posting_instructions(
+                subreddit, title, body, flair
+            ),
         }
 
         queue = _load_queue()
@@ -319,6 +322,7 @@ def _get_praw_client():
     """Return authenticated PRAW client or None if credentials unavailable."""
     try:
         import praw  # type: ignore
+
         creds = json.loads(CREDENTIALS_PATH.read_text())
         return praw.Reddit(
             client_id=creds["client_id"],

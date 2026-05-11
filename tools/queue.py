@@ -49,6 +49,7 @@ VALID_PLATFORMS = {
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_queue() -> dict:
     """Load the queue from disk. Creates an empty queue if file doesn't exist."""
     if not QUEUE_PATH.exists():
@@ -76,6 +77,7 @@ def _generate_id() -> str:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def add_to_queue(
     post_urn: str,
@@ -337,13 +339,20 @@ def clear_posted(older_than_days: int = 30) -> int:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Content queue manager for Motto Appraisal")
+    parser = argparse.ArgumentParser(
+        description="Content queue manager for Motto Appraisal"
+    )
     parser.add_argument("--stats", action="store_true", help="Show queue statistics")
     parser.add_argument("--pending", action="store_true", help="List pending items")
-    parser.add_argument("--review", action="store_true", help="List items needing review")
+    parser.add_argument(
+        "--review", action="store_true", help="List items needing review"
+    )
     parser.add_argument("--platform", type=str, help="Filter by platform")
     parser.add_argument(
-        "--clear-old", type=int, metavar="DAYS", help="Remove posted items older than N days"
+        "--clear-old",
+        type=int,
+        metavar="DAYS",
+        help="Remove posted items older than N days",
     )
     args = parser.parse_args()
 

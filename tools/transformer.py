@@ -68,6 +68,7 @@ CONTENT PILLARS:
 # Anthropic client
 # ---------------------------------------------------------------------------
 
+
 def _get_client() -> anthropic.Anthropic:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -81,6 +82,7 @@ def _get_client() -> anthropic.Anthropic:
 # ---------------------------------------------------------------------------
 # Cost tracking
 # ---------------------------------------------------------------------------
+
 
 def _log_cost(section: str, input_tokens: int, output_tokens: int) -> dict:
     """
@@ -103,7 +105,10 @@ def _log_cost(section: str, input_tokens: int, output_tokens: int) -> dict:
 # Generation helpers
 # ---------------------------------------------------------------------------
 
-def _call_claude(client: anthropic.Anthropic, prompt: str, max_tokens: int = 2000) -> tuple[str, dict]:
+
+def _call_claude(
+    client: anthropic.Anthropic, prompt: str, max_tokens: int = 2000
+) -> tuple[str, dict]:
     """
     Single Claude call. Returns (response_text, cost_dict).
     """
@@ -129,7 +134,11 @@ def _call_claude_json(
     Call Claude and attempt to parse the response as JSON.
     Returns (parsed_object, cost_dict).
     """
-    text, cost = _call_claude(client, prompt + "\n\nRespond with valid JSON only. No markdown fences.", max_tokens)
+    text, cost = _call_claude(
+        client,
+        prompt + "\n\nRespond with valid JSON only. No markdown fences.",
+        max_tokens,
+    )
     try:
         # Strip potential markdown code fences
         clean = text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
@@ -141,6 +150,7 @@ def _call_claude_json(
 # ---------------------------------------------------------------------------
 # Section generators (one per section that uses Claude)
 # ---------------------------------------------------------------------------
+
 
 def _gen_linkedin_post(client, post_text: str, pillar: int) -> tuple[str, dict]:
     prompt = (
@@ -156,7 +166,9 @@ def _gen_linkedin_post(client, post_text: str, pillar: int) -> tuple[str, dict]:
     return _call_claude(client, prompt, max_tokens=1000)
 
 
-def _gen_linkedin_alt_hooks(client, post_text: str, pillar: int) -> tuple[list[str], dict]:
+def _gen_linkedin_alt_hooks(
+    client, post_text: str, pillar: int
+) -> tuple[list[str], dict]:
     prompt = (
         f"Write 3 alternative first-line hooks for this LinkedIn post (Pillar {pillar}: "
         f"{PILLAR_NAMES.get(pillar, 'Real Estate')}).\n\n"
@@ -173,7 +185,9 @@ def _gen_linkedin_alt_hooks(client, post_text: str, pillar: int) -> tuple[list[s
     return [], cost
 
 
-def _gen_linkedin_group_version(client, post_text: str, pillar: int) -> tuple[str, dict]:
+def _gen_linkedin_group_version(
+    client, post_text: str, pillar: int
+) -> tuple[str, dict]:
     prompt = (
         f"Rewrite this LinkedIn post for a LinkedIn professional group (Pillar {pillar}: "
         f"{PILLAR_NAMES.get(pillar, 'Real Estate')}).\n\n"
@@ -189,7 +203,9 @@ def _gen_linkedin_group_version(client, post_text: str, pillar: int) -> tuple[st
     return _call_claude(client, prompt, max_tokens=800)
 
 
-def _gen_facebook_group_version(client, post_text: str, pillar: int) -> tuple[str, dict]:
+def _gen_facebook_group_version(
+    client, post_text: str, pillar: int
+) -> tuple[str, dict]:
     prompt = (
         f"Rewrite this post for a local real estate Facebook group (Pillar {pillar}: "
         f"{PILLAR_NAMES.get(pillar, 'Real Estate')}).\n\n"
@@ -205,7 +221,9 @@ def _gen_facebook_group_version(client, post_text: str, pillar: int) -> tuple[st
     return _call_claude(client, prompt, max_tokens=800)
 
 
-def _gen_reddit_post(client, post_text: str, pillar: int, subreddits: list[str]) -> tuple[dict, dict]:
+def _gen_reddit_post(
+    client, post_text: str, pillar: int, subreddits: list[str]
+) -> tuple[dict, dict]:
     sub_hint = ", ".join(subreddits[:2]) if subreddits else "r/realestateinvesting"
     prompt = (
         f"Write a Reddit text post for {sub_hint} based on this content "
@@ -386,7 +404,9 @@ def _gen_beehiiv_version(client, post_text: str, pillar: int) -> tuple[dict, dic
     return result, cost
 
 
-def _gen_linkedin_article_version(client, post_text: str, pillar: int) -> tuple[dict, dict]:
+def _gen_linkedin_article_version(
+    client, post_text: str, pillar: int
+) -> tuple[dict, dict]:
     prompt = (
         f"Write a professional LinkedIn Article based on this content "
         f"(Pillar {pillar}: {PILLAR_NAMES.get(pillar, 'Real Estate')}).\n\n"
@@ -502,6 +522,7 @@ def _gen_platform_strategy(
 # Main transform function
 # ---------------------------------------------------------------------------
 
+
 def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C901
     """
     Given a LinkedIn post + content class, generate all 21 output sections.
@@ -528,7 +549,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
     output["CONTENT_CLASSIFICATION"] = content_class
 
     # 2. PLATFORM_STRATEGY
-    platform_strategy, cost = _gen_platform_strategy(client, post_text, pillar, content_class)
+    platform_strategy, cost = _gen_platform_strategy(
+        client, post_text, pillar, content_class
+    )
     output["PLATFORM_STRATEGY"] = _track("PLATFORM_STRATEGY", platform_strategy, cost)
 
     # 3. LINKEDIN_POST (clean version)
@@ -542,7 +565,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
     # 5. LINKEDIN_GROUP_VERSION (requires manual review)
     if content_class.get("group_safe"):
         lg_version, cost = _gen_linkedin_group_version(client, post_text, pillar)
-        output["LINKEDIN_GROUP_VERSION"] = _track("LINKEDIN_GROUP_VERSION", lg_version, cost)
+        output["LINKEDIN_GROUP_VERSION"] = _track(
+            "LINKEDIN_GROUP_VERSION", lg_version, cost
+        )
         output["LINKEDIN_GROUP_VERSION_REVIEW_FLAG"] = True
     else:
         output["LINKEDIN_GROUP_VERSION"] = None
@@ -551,7 +576,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
     # 6. FACEBOOK_GROUP_VERSION (requires manual review)
     if content_class.get("group_safe"):
         fb_version, cost = _gen_facebook_group_version(client, post_text, pillar)
-        output["FACEBOOK_GROUP_VERSION"] = _track("FACEBOOK_GROUP_VERSION", fb_version, cost)
+        output["FACEBOOK_GROUP_VERSION"] = _track(
+            "FACEBOOK_GROUP_VERSION", fb_version, cost
+        )
         output["FACEBOOK_GROUP_VERSION_REVIEW_FLAG"] = True
     else:
         output["FACEBOOK_GROUP_VERSION"] = None
@@ -571,7 +598,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
     # 8. REDDIT_COMMENT_VERSION (requires manual review)
     if content_class.get("subreddit_safe"):
         reddit_comment, cost = _gen_reddit_comment(client, post_text, pillar)
-        output["REDDIT_COMMENT_VERSION"] = _track("REDDIT_COMMENT_VERSION", reddit_comment, cost)
+        output["REDDIT_COMMENT_VERSION"] = _track(
+            "REDDIT_COMMENT_VERSION", reddit_comment, cost
+        )
         output["REDDIT_COMMENT_REVIEW_FLAG"] = True
     else:
         output["REDDIT_COMMENT_VERSION"] = None
@@ -624,7 +653,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
         output["SUBSTACK_VERSION"] = None
 
     # 15. BEEHIIV_VERSION (always generate if educational or data-rich)
-    if content_class.get("long_form_safe") or content_class.get("outreach_snippet_safe"):
+    if content_class.get("long_form_safe") or content_class.get(
+        "outreach_snippet_safe"
+    ):
         beehiiv, cost = _gen_beehiiv_version(client, post_text, pillar)
         output["BEEHIIV_VERSION"] = _track("BEEHIIV_VERSION", beehiiv, cost)
     else:
@@ -633,7 +664,9 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
     # 16. LINKEDIN_ARTICLE_VERSION
     if content_class.get("long_form_safe"):
         li_article, cost = _gen_linkedin_article_version(client, post_text, pillar)
-        output["LINKEDIN_ARTICLE_VERSION"] = _track("LINKEDIN_ARTICLE_VERSION", li_article, cost)
+        output["LINKEDIN_ARTICLE_VERSION"] = _track(
+            "LINKEDIN_ARTICLE_VERSION", li_article, cost
+        )
     else:
         output["LINKEDIN_ARTICLE_VERSION"] = None
 
@@ -681,67 +714,83 @@ def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C9
 # Helper builders for sections 20 and 21
 # ---------------------------------------------------------------------------
 
+
 def _build_automation_notes(content_class: dict, output: dict) -> dict:
     """Section 20: Classify each section as auto-post eligible or manual-only."""
     notes: dict[str, str] = {}
 
     notes["LINKEDIN_POST"] = (
-        "AUTO-POST eligible" if content_class.get("public_feed_safe")
+        "AUTO-POST eligible"
+        if content_class.get("public_feed_safe")
         else "MANUAL REVIEW required before posting"
     )
-    notes["LINKEDIN_ALT_HOOKS"] = "MANUAL — use for A/B testing. Select one before posting."
+    notes["LINKEDIN_ALT_HOOKS"] = (
+        "MANUAL — use for A/B testing. Select one before posting."
+    )
     notes["LINKEDIN_GROUP_VERSION"] = (
         "MANUAL REVIEW required — must be reviewed before posting to any group"
-        if content_class.get("group_safe") else "NOT GENERATED — content not group_safe"
+        if content_class.get("group_safe")
+        else "NOT GENERATED — content not group_safe"
     )
     notes["FACEBOOK_GROUP_VERSION"] = (
         "MANUAL REVIEW required — group moderators may remove promotional content"
-        if content_class.get("group_safe") else "NOT GENERATED — content not group_safe"
+        if content_class.get("group_safe")
+        else "NOT GENERATED — content not group_safe"
     )
     notes["REDDIT_POST_VERSION"] = (
         "MANUAL REVIEW required — Reddit will detect and ban promotional content"
-        if content_class.get("subreddit_safe") else "NOT GENERATED — content not subreddit_safe"
+        if content_class.get("subreddit_safe")
+        else "NOT GENERATED — content not subreddit_safe"
     )
     notes["REDDIT_COMMENT_VERSION"] = (
         "MANUAL REVIEW required — use only in relevant active threads"
-        if content_class.get("subreddit_safe") else "NOT GENERATED"
+        if content_class.get("subreddit_safe")
+        else "NOT GENERATED"
     )
 
     x_posts_status = output.get("X_POSTS", [])
     notes["X_POSTS"] = (
         "AUTO-POST eligible (gated by AUTO_POST_X env var). Review char limits before enabling."
-        if x_posts_status else "NOT GENERATED"
+        if x_posts_status
+        else "NOT GENERATED"
     )
     notes["X_THREAD"] = (
         "AUTO-POST eligible for threads via x_poster.post_thread(). Gated by AUTO_POST_X."
-        if output.get("X_THREAD") else "NOT GENERATED"
+        if output.get("X_THREAD")
+        else "NOT GENERATED"
     )
     notes["X_REPLIES"] = "MANUAL — deploy as replies to relevant conversations only."
     notes["PINTEREST_PIN"] = (
         "MANUAL — requires image creation before posting."
-        if output.get("PINTEREST_PIN") else "NOT GENERATED"
+        if output.get("PINTEREST_PIN")
+        else "NOT GENERATED"
     )
     notes["MEDIUM_VERSION"] = (
         "MANUAL — format in Medium editor before publishing."
-        if output.get("MEDIUM_VERSION") else "NOT GENERATED"
+        if output.get("MEDIUM_VERSION")
+        else "NOT GENERATED"
     )
     notes["SUBSTACK_VERSION"] = (
         "MANUAL — publish via Substack dashboard."
-        if output.get("SUBSTACK_VERSION") else "NOT GENERATED"
+        if output.get("SUBSTACK_VERSION")
+        else "NOT GENERATED"
     )
     notes["BEEHIIV_VERSION"] = (
         "AUTO-DRAFT via beehiiv_publisher.create_post(). Never auto-sent. Review before confirming."
-        if output.get("BEEHIIV_VERSION") else "NOT GENERATED"
+        if output.get("BEEHIIV_VERSION")
+        else "NOT GENERATED"
     )
     notes["LINKEDIN_ARTICLE_VERSION"] = "MANUAL — publish via LinkedIn Articles editor."
     notes["COMMENT_BANK"] = "MANUAL — deploy selectively in relevant comment threads."
     notes["OUTREACH_SNIPPETS"] = (
         "MANUAL — personalize before sending. These are templates only."
-        if output.get("OUTREACH_SNIPPETS") else "NOT GENERATED"
+        if output.get("OUTREACH_SNIPPETS")
+        else "NOT GENERATED"
     )
     notes["SMS_TEMPLATES"] = (
         "MANUAL — requires explicit prior consent. Verify consent before sending."
-        if output.get("SMS_TEMPLATES") else "NOT GENERATED — content not sms_followup_safe"
+        if output.get("SMS_TEMPLATES")
+        else "NOT GENERATED — content not sms_followup_safe"
     )
 
     return notes
@@ -829,7 +878,6 @@ def _build_manual_review_flags(content_class: dict, output: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import sys
     from tools.classifier import classify
 
     sample_post = {
@@ -860,4 +908,6 @@ if __name__ == "__main__":
         json.dump(result, f, indent=2)
 
     print(f"Transform complete. Output saved to: {output_path}")
-    print(f"Total estimated cost: ${result['cost_tracking']['total_estimated_cost_usd']:.4f}")
+    print(
+        f"Total estimated cost: ${result['cost_tracking']['total_estimated_cost_usd']:.4f}"
+    )

@@ -16,11 +16,9 @@ Strategy:
 """
 
 import os
-import json
 import logging
 import requests
 from pathlib import Path
-from datetime import datetime, timezone
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -113,7 +111,9 @@ def post_to_company_page(
                 "org_urn": ORG_URN,
             }
         else:
-            log.error(f"Company page post failed: {resp.status_code} — {resp.text[:200]}")
+            log.error(
+                f"Company page post failed: {resp.status_code} — {resp.text[:200]}"
+            )
             return {
                 "success": False,
                 "error": resp.text[:300],
@@ -151,7 +151,9 @@ def upload_image_for_org(file_path: str) -> Optional[str]:
         )
 
         if not reg_resp.ok:
-            log.error(f"Org image register failed: {reg_resp.status_code} — {reg_resp.text[:200]}")
+            log.error(
+                f"Org image register failed: {reg_resp.status_code} — {reg_resp.text[:200]}"
+            )
             return None
 
         upload_data = reg_resp.json()["value"]
@@ -181,7 +183,9 @@ def upload_image_for_org(file_path: str) -> Optional[str]:
         return None
 
 
-def upload_doc_for_org(file_path: str, title: str = "Motto Appraisal Report") -> Optional[str]:
+def upload_doc_for_org(
+    file_path: str, title: str = "Motto Appraisal Report"
+) -> Optional[str]:
     """
     Upload a document (PDF) asset under the org identity.
     Returns the asset URN for use in post_to_company_page().
@@ -206,7 +210,9 @@ def upload_doc_for_org(file_path: str, title: str = "Motto Appraisal Report") ->
         )
 
         if not reg_resp.ok:
-            log.error(f"Org document register failed: {reg_resp.status_code} — {reg_resp.text[:200]}")
+            log.error(
+                f"Org document register failed: {reg_resp.status_code} — {reg_resp.text[:200]}"
+            )
             return None
 
         upload_data = reg_resp.json()["value"]
@@ -272,7 +278,11 @@ Return ONLY the rephrased post text. No commentary."""
     except Exception as e:
         log.error(f"rephrase_for_brand failed: {e}")
         # Return a minimally modified version as fallback
-        return personal_post_text.replace(" I ", " Motto Appraisal ").replace("I've", "We've").replace("I'm", "We're")
+        return (
+            personal_post_text.replace(" I ", " Motto Appraisal ")
+            .replace("I've", "We've")
+            .replace("I'm", "We're")
+        )
 
 
 def get_company_page_stats() -> dict:
@@ -295,13 +305,21 @@ def get_company_page_stats() -> dict:
                 stats = elements[0]
                 return {
                     "success": True,
-                    "follower_count": stats.get("followerCounts", {}).get("organicFollowerCount", 0),
+                    "follower_count": stats.get("followerCounts", {}).get(
+                        "organicFollowerCount", 0
+                    ),
                     "org_urn": ORG_URN,
                 }
             return {"success": True, "follower_count": 0, "org_urn": ORG_URN}
         else:
-            log.warning(f"Could not fetch company stats ({resp.status_code}): {resp.text[:200]}")
-            return {"success": False, "error": resp.text[:200], "status_code": resp.status_code}
+            log.warning(
+                f"Could not fetch company stats ({resp.status_code}): {resp.text[:200]}"
+            )
+            return {
+                "success": False,
+                "error": resp.text[:200],
+                "status_code": resp.status_code,
+            }
 
     except Exception as e:
         log.error(f"get_company_page_stats exception: {e}")

@@ -108,7 +108,9 @@ def _save_queue(queue: list) -> None:
     QUEUE_PATH.write_text(json.dumps(queue, indent=2))
 
 
-def _build_posting_instructions(group: dict, post_text: str, discussion_question: Optional[str]) -> str:
+def _build_posting_instructions(
+    group: dict, post_text: str, discussion_question: Optional[str]
+) -> str:
     """Build a copy-paste ready posting instruction block for a LinkedIn group."""
     full_text = post_text
     if discussion_question:
@@ -187,7 +189,9 @@ def queue_for_groups(
                     "tone": group.get("tone", "professional"),
                     "promotion_risk": group.get("promotion_risk", "unknown"),
                     "content_fit": group.get("content_fit", []),
-                    "posting_instructions": _build_posting_instructions(group, group_safe_version or post_text, discussion_question),
+                    "posting_instructions": _build_posting_instructions(
+                        group, group_safe_version or post_text, discussion_question
+                    ),
                 }
 
                 queue = _load_queue()
@@ -219,8 +223,7 @@ def get_pending_review() -> list[dict]:
 def get_group_recommendations(pillar: int) -> list[dict]:
     """Return suitable groups for a given content pillar."""
     return [
-        group for group in RELEVANT_GROUPS
-        if pillar in group.get("content_fit", [])
+        group for group in RELEVANT_GROUPS if pillar in group.get("content_fit", [])
     ]
 
 

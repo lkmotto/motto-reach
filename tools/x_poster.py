@@ -15,7 +15,9 @@ If OAuth1 fails (401), check:
 4. Enable "OAuth 1.0a" explicitly in User authentication settings
 """
 
-import json, os, logging
+import json
+import os
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +32,7 @@ def _get_oauth_session():
     """Return an authenticated requests_oauthlib.OAuth1Session."""
     try:
         from requests_oauthlib import OAuth1Session
+
         creds = json.loads(CREDS_PATH.read_text())
         return OAuth1Session(
             client_key=creds["consumer_key"],
@@ -61,7 +64,7 @@ def post_tweet(text: str, reply_to_id: str = None) -> dict:
     Returns: {"id": str, "text": str, "url": str, "success": bool}
     """
     if len(text) > MAX_TWEET_LENGTH:
-        text = text[:MAX_TWEET_LENGTH - 3] + "..."
+        text = text[: MAX_TWEET_LENGTH - 3] + "..."
 
     session = _get_oauth_session()
     if not session:
@@ -94,7 +97,7 @@ def post_thread(tweets: list[str]) -> list[dict]:
         if result.get("success"):
             reply_to = result["id"]
         else:
-            log.warning(f"Thread broke at tweet {i+1}: {result.get('error')}")
+            log.warning(f"Thread broke at tweet {i + 1}: {result.get('error')}")
             break
     return results
 
@@ -105,3 +108,18 @@ def safe_post_tweet(text: str) -> dict:
         log.info(f"AUTO_POST_X=false — tweet queued for manual review: {text[:80]}...")
         return {"success": False, "queued": True, "reason": "AUTO_POST_X not enabled"}
     return post_tweet(text)
+
+
+def is_auto_post_enabled() -> bool:
+    """Return whether X auto-posting is enabled."""
+    return AUTO_POST_X
+
+
+def safe_post_thread(tweets: list[str]) -> list[dict]:
+    """Post a thread only if AUTO_POST_X=true. Otherwise log and return queued status."""
+    if not AUTO_POST_X:
+        log.info(
+            f"AUTO_POST_X=false — thread ({len(tweets)} tweets) queued for manual review"
+        )
+        return [{"success": False, "queued": True, "reason": "AUTO_POST_X not enabled"}]
+    return post_thread(tweets)

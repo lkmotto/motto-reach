@@ -68,7 +68,9 @@ def _save_queue(queue: list) -> None:
     QUEUE_PATH.write_text(json.dumps(queue, indent=2))
 
 
-def _build_posting_instructions(group_name: str, group_url: str, post_text: str, image_path: Optional[str] = None) -> str:
+def _build_posting_instructions(
+    group_name: str, group_url: str, post_text: str, image_path: Optional[str] = None
+) -> str:
     """Build a copy-paste ready posting instruction block for a Facebook group."""
     image_line = f"\n6. Attach image: {image_path}" if image_path else ""
     return (
@@ -92,7 +94,9 @@ def _build_posting_instructions(group_name: str, group_url: str, post_text: str,
     )
 
 
-def post_to_managed_group(group_id: str, message: str, image_url: Optional[str] = None) -> dict:
+def post_to_managed_group(
+    group_id: str, message: str, image_url: Optional[str] = None
+) -> dict:
     """
     Post to a Facebook group the page manages.
     Uses page token. Returns post ID or error.
@@ -166,7 +170,9 @@ def queue_for_manual_review(
             "source_post_urn": source_post_urn,
             "pillar": pillar,
             "image_path": image_path,
-            "posting_instructions": _build_posting_instructions(group_name, group_url, post_text, image_path),
+            "posting_instructions": _build_posting_instructions(
+                group_name, group_url, post_text, image_path
+            ),
         }
 
         queue = _load_queue()
@@ -247,7 +253,9 @@ def get_managed_groups() -> list[dict]:
             log.info(f"Fetched {len(groups)} managed Facebook groups")
             return groups
         else:
-            log.warning(f"Could not fetch managed groups ({resp.status_code}): {resp.text[:200]}")
+            log.warning(
+                f"Could not fetch managed groups ({resp.status_code}): {resp.text[:200]}"
+            )
             return MANAGED_GROUPS
 
     except Exception as e:

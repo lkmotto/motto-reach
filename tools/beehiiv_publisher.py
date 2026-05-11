@@ -7,7 +7,9 @@ Posts are ALWAYS created as drafts — never auto-sent.
 """
 
 from __future__ import annotations
-import sys as _sys, pathlib as _pathlib  # noqa: E402
+import sys as _sys  # noqa: E402
+import pathlib as _pathlib  # noqa: E402
+
 _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
 import sentry_init  # noqa: E402,F401
 
@@ -32,12 +34,12 @@ _DEFAULT_STATUS = "draft"
 # Auth helper
 # ---------------------------------------------------------------------------
 
+
 def _get_api_key() -> str:
     api_key = os.environ.get("BEEHIIV_API_KEY")
     if not api_key:
         raise EnvironmentError(
-            "BEEHIIV_API_KEY environment variable is not set. "
-            "Add it to your .env file."
+            "BEEHIIV_API_KEY environment variable is not set. Add it to your .env file."
         )
     return api_key
 
@@ -63,6 +65,7 @@ def _handle_response(response: requests.Response, operation: str) -> dict:
 # ---------------------------------------------------------------------------
 # Core API functions
 # ---------------------------------------------------------------------------
+
 
 def create_post(
     subject: str,
@@ -96,6 +99,7 @@ def create_post(
 
     if status == "confirmed":
         import warnings
+
         warnings.warn(
             "⚠️  Creating a 'confirmed' Beehiiv post will SEND it immediately to all subscribers. "
             "This should only be done manually after review, not via automated pipeline.",
@@ -311,7 +315,12 @@ def markdown_to_html(markdown_text: str) -> str:
     wrapped = []
     for p in paragraphs:
         p = p.strip()
-        if p and not p.startswith("<h") and not p.startswith("<ul") and not p.startswith("</ul"):
+        if (
+            p
+            and not p.startswith("<h")
+            and not p.startswith("<ul")
+            and not p.startswith("</ul")
+        ):
             p = f"<p>{p}</p>"
         wrapped.append(p)
     html = "\n".join(wrapped)
@@ -328,14 +337,22 @@ def markdown_to_html(markdown_text: str) -> str:
 
 if __name__ == "__main__":
     import sentry_sdk as _sentry_sdk
+
     try:
         import argparse
-        import json
 
-        parser = argparse.ArgumentParser(description="Beehiiv publisher for Motto Appraisal")
-        parser.add_argument("--list-drafts", action="store_true", help="List current draft posts")
-        parser.add_argument("--list-subscribers", action="store_true", help="List active subscribers")
-        parser.add_argument("--sub-count", action="store_true", help="Show subscriber count")
+        parser = argparse.ArgumentParser(
+            description="Beehiiv publisher for Motto Appraisal"
+        )
+        parser.add_argument(
+            "--list-drafts", action="store_true", help="List current draft posts"
+        )
+        parser.add_argument(
+            "--list-subscribers", action="store_true", help="List active subscribers"
+        )
+        parser.add_argument(
+            "--sub-count", action="store_true", help="Show subscriber count"
+        )
         args = parser.parse_args()
 
         if args.list_drafts:
@@ -361,4 +378,3 @@ if __name__ == "__main__":
     except Exception as _exc:
         _sentry_sdk.capture_exception(_exc)
         raise
-
