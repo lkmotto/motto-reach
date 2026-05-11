@@ -7,6 +7,9 @@ Posts are ALWAYS created as drafts — never auto-sent.
 """
 
 from __future__ import annotations
+import sys as _sys, pathlib as _pathlib  # noqa: E402
+_sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
+import sentry_init  # noqa: E402,F401
 
 import os
 from typing import Optional
@@ -324,32 +327,38 @@ def markdown_to_html(markdown_text: str) -> str:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import argparse
-    import json
+    import sentry_sdk as _sentry_sdk
+    try:
+        import argparse
+        import json
 
-    parser = argparse.ArgumentParser(description="Beehiiv publisher for Motto Appraisal")
-    parser.add_argument("--list-drafts", action="store_true", help="List current draft posts")
-    parser.add_argument("--list-subscribers", action="store_true", help="List active subscribers")
-    parser.add_argument("--sub-count", action="store_true", help="Show subscriber count")
-    args = parser.parse_args()
+        parser = argparse.ArgumentParser(description="Beehiiv publisher for Motto Appraisal")
+        parser.add_argument("--list-drafts", action="store_true", help="List current draft posts")
+        parser.add_argument("--list-subscribers", action="store_true", help="List active subscribers")
+        parser.add_argument("--sub-count", action="store_true", help="Show subscriber count")
+        args = parser.parse_args()
 
-    if args.list_drafts:
-        drafts = list_posts(status="draft")
-        print(f"Draft posts ({len(drafts)}):")
-        for d in drafts:
-            print(f"  [{d['id']}] {d['subject']} — {d['created_at']}")
+        if args.list_drafts:
+            drafts = list_posts(status="draft")
+            print(f"Draft posts ({len(drafts)}):")
+            for d in drafts:
+                print(f"  [{d['id']}] {d['subject']} — {d['created_at']}")
 
-    elif args.list_subscribers:
-        subs = get_subscribers(limit=100)
-        print(f"Active subscribers ({len(subs)}):")
-        for s in subs[:10]:
-            print(f"  {s['email']} — {s['name'] or 'No name'}")
-        if len(subs) > 10:
-            print(f"  ... and {len(subs) - 10} more")
+        elif args.list_subscribers:
+            subs = get_subscribers(limit=100)
+            print(f"Active subscribers ({len(subs)}):")
+            for s in subs[:10]:
+                print(f"  {s['email']} — {s['name'] or 'No name'}")
+            if len(subs) > 10:
+                print(f"  ... and {len(subs) - 10} more")
 
-    elif args.sub_count:
-        subs = get_subscribers(limit=100)
-        print(f"Active subscribers: {len(subs)}")
+        elif args.sub_count:
+            subs = get_subscribers(limit=100)
+            print(f"Active subscribers: {len(subs)}")
 
-    else:
-        parser.print_help()
+        else:
+            parser.print_help()
+    except Exception as _exc:
+        _sentry_sdk.capture_exception(_exc)
+        raise
+

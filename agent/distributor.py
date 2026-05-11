@@ -19,6 +19,9 @@ Usage:
 """
 
 from __future__ import annotations
+import sys as _sys, pathlib as _pathlib  # noqa: E402
+_sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
+import sentry_init  # noqa: E402,F401
 
 import json
 import os
@@ -723,82 +726,88 @@ def distribute(post_data: dict, auto_post_x: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import argparse
+    import sentry_sdk as _sentry_sdk
+    try:
+        import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Motto Appraisal — Content Distribution Engine"
-    )
-    parser.add_argument(
-        "--post-file",
-        type=str,
-        required=False,
-        help="Path to a JSON file containing post_data dict",
-    )
-    parser.add_argument(
-        "--auto-post-x",
-        action="store_true",
-        default=False,
-        help="Enable X auto-posting (also requires AUTO_POST_X=true env var)",
-    )
-    parser.add_argument(
-        "--pillar",
-        type=int,
-        default=1,
-        help="Content pillar (1–6)",
-    )
-    parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="Run with a built-in demo post (no file required)",
-    )
-    args = parser.parse_args()
+        parser = argparse.ArgumentParser(
+            description="Motto Appraisal — Content Distribution Engine"
+        )
+        parser.add_argument(
+            "--post-file",
+            type=str,
+            required=False,
+            help="Path to a JSON file containing post_data dict",
+        )
+        parser.add_argument(
+            "--auto-post-x",
+            action="store_true",
+            default=False,
+            help="Enable X auto-posting (also requires AUTO_POST_X=true env var)",
+        )
+        parser.add_argument(
+            "--pillar",
+            type=int,
+            default=1,
+            help="Content pillar (1–6)",
+        )
+        parser.add_argument(
+            "--demo",
+            action="store_true",
+            help="Run with a built-in demo post (no file required)",
+        )
+        args = parser.parse_args()
 
-    if args.demo:
-        post_data = {
-            "post_urn": f"urn:li:activity:demo_{int(time.time())}",
-            "post_text": (
-                "AVM said $420k. My appraisal came in at $387k.\n\n"
-                "The delta? A 450 sq ft unpermitted addition with mismatched flooring "
-                "that Zillow's model will never catch.\n\n"
-                "AVMs read square footage and zip code. They don't read condition, "
-                "effective age, or deferred maintenance.\n\n"
-                "That 8% gap costs buyers real money and lenders real risk.\n\n"
-                "If you're underwriting DSCR loans in DFW, here's what to watch for:\n"
-                "• Permitted vs unpermitted additions\n"
-                "• Pool condition adjustments\n"
-                "• Functional obsolescence from dated floor plans\n\n"
-                "AVM confidence scores are not appraiser sign-offs."
-            ),
-            "pillar": args.pillar,
-            "format_type": "educational",
-            "char_count": 580,
-            "published_at": _now(),
-        }
-    elif args.post_file:
-        with open(args.post_file) as f:
-            post_data = json.load(f)
-    else:
-        parser.print_help()
-        sys.exit(0)
+        if args.demo:
+            post_data = {
+                "post_urn": f"urn:li:activity:demo_{int(time.time())}",
+                "post_text": (
+                    "AVM said $420k. My appraisal came in at $387k.\n\n"
+                    "The delta? A 450 sq ft unpermitted addition with mismatched flooring "
+                    "that Zillow's model will never catch.\n\n"
+                    "AVMs read square footage and zip code. They don't read condition, "
+                    "effective age, or deferred maintenance.\n\n"
+                    "That 8% gap costs buyers real money and lenders real risk.\n\n"
+                    "If you're underwriting DSCR loans in DFW, here's what to watch for:\n"
+                    "• Permitted vs unpermitted additions\n"
+                    "• Pool condition adjustments\n"
+                    "• Functional obsolescence from dated floor plans\n\n"
+                    "AVM confidence scores are not appraiser sign-offs."
+                ),
+                "pillar": args.pillar,
+                "format_type": "educational",
+                "char_count": 580,
+                "published_at": _now(),
+            }
+        elif args.post_file:
+            with open(args.post_file) as f:
+                post_data = json.load(f)
+        else:
+            parser.print_help()
+            sys.exit(0)
 
-    print(f"Starting distribution for post: {post_data['post_urn']}")
-    print(f"Pillar: {post_data.get('pillar', 1)} | AUTO_POST_X: {is_auto_post_enabled()}")
-    print(f"POST_TO_COMPANY_PAGE: {os.environ.get('POST_TO_COMPANY_PAGE', 'false')}")
-    print("─" * 60)
+        print(f"Starting distribution for post: {post_data['post_urn']}")
+        print(f"Pillar: {post_data.get('pillar', 1)} | AUTO_POST_X: {is_auto_post_enabled()}")
+        print(f"POST_TO_COMPANY_PAGE: {os.environ.get('POST_TO_COMPANY_PAGE', 'false')}")
+        print("─" * 60)
 
-    result = distribute(post_data, auto_post_x=args.auto_post_x)
+        result = distribute(post_data, auto_post_x=args.auto_post_x)
 
-    community = result["queued"].get("community", {})
-    print("\n✓ Distribution complete")
-    print(f"  Cost: ${result['transform_cost'].get('total_estimated_usd', 0):.4f}")
-    print(f"  Review items: {len(result['queued']['review_items'])}")
-    print(f"  Community queued: Reddit={community.get('reddit', 0)}, LI Groups={community.get('linkedin_groups', 0)}, FB Groups={community.get('facebook_groups', 0)}")
-    print(f"  Company page: {'posted' if result.get('company_page', {}) and result['company_page'].get('success') else 'skipped/failed'}")
-    print(f"  Posted: {len(result['posted'])}")
-    print(f"  Errors: {len(result['errors'])}")
-    print(f"  Results: {result.get('results_file', 'not saved')}")
+        community = result["queued"].get("community", {})
+        print("\n✓ Distribution complete")
+        print(f"  Cost: ${result['transform_cost'].get('total_estimated_usd', 0):.4f}")
+        print(f"  Review items: {len(result['queued']['review_items'])}")
+        print(f"  Community queued: Reddit={community.get('reddit', 0)}, LI Groups={community.get('linkedin_groups', 0)}, FB Groups={community.get('facebook_groups', 0)}")
+        print(f"  Company page: {'posted' if result.get('company_page', {}) and result['company_page'].get('success') else 'skipped/failed'}")
+        print(f"  Posted: {len(result['posted'])}")
+        print(f"  Errors: {len(result['errors'])}")
+        print(f"  Results: {result.get('results_file', 'not saved')}")
 
-    if result["errors"]:
-        print("\nErrors:")
-        for err in result["errors"]:
-            print(f"  - {err}")
+        if result["errors"]:
+            print("\nErrors:")
+            for err in result["errors"]:
+                print(f"  - {err}")
+    except Exception as _exc:
+        _sentry_sdk.capture_exception(_exc)
+        raise
+
