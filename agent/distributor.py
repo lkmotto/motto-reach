@@ -326,7 +326,7 @@ def _post_to_company_page(
 # Step 7: Community content queueing
 # ---------------------------------------------------------------------------
 
-def _queue_community_content(
+def _queue_community_content(  # noqa: C901
     post_data: dict,
     transform_output: dict,
     content_class: dict,
@@ -446,7 +446,7 @@ def _queue_community_content(
 # Main orchestrator
 # ---------------------------------------------------------------------------
 
-def distribute(post_data: dict, auto_post_x: bool = False) -> dict:
+def distribute(post_data: dict, auto_post_x: bool = False) -> dict:  # noqa: C901
     """
     Full distribution pipeline for one piece of content.
 

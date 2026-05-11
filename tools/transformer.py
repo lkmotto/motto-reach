@@ -502,7 +502,7 @@ def _gen_platform_strategy(
 # Main transform function
 # ---------------------------------------------------------------------------
 
-def transform(post: dict, content_class: dict, pillar: int) -> dict:
+def transform(post: dict, content_class: dict, pillar: int) -> dict:  # noqa: C901
     """
     Given a LinkedIn post + content class, generate all 21 output sections.
 
