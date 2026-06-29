@@ -4,6 +4,7 @@ Sends a plain-text summary after each cycle where something was sent.
 Uses smtplib with Gmail App Password (env: GMAIL_APP_PASSWORD).
 Falls back to writing a pending_report.json for the Perplexity connector to send.
 """
+
 import os
 import json
 import smtplib
@@ -15,17 +16,24 @@ from datetime import datetime, timezone, timedelta
 
 log = logging.getLogger("reporter")
 
-GMAIL_FROM    = "ljm32901@gmail.com"
-GMAIL_TO      = "ljm32901@gmail.com"
+GMAIL_FROM = "ljm32901@gmail.com"
+GMAIL_TO = "ljm32901@gmail.com"
 GMAIL_APP_PWD = os.getenv("GMAIL_APP_PASSWORD", "")
-PENDING_FILE  = Path(__file__).parent / "data" / "pending_report.json"
+PENDING_FILE = Path(__file__).parent / "data" / "pending_report.json"
 
 
 def _cdt_now() -> str:
-    return (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%B %d, %Y %I:%M %p CDT")
+    return (datetime.now(timezone.utc) - timedelta(hours=5)).strftime(
+        "%B %d, %Y %I:%M %p CDT"
+    )
 
 
-def build_email_body(cycle_summary: dict, abcd_status: dict, inbox_replies: list, sharpener_note: str = "") -> str:
+def build_email_body(
+    cycle_summary: dict,
+    abcd_status: dict,
+    inbox_replies: list,
+    sharpener_note: str = "",
+) -> str:
     sent = cycle_summary.get("sent", [])
     reddit_dms = sum(1 for s in sent if s.get("type") == "reddit_dm")
     reddit_comments = sum(1 for s in sent if s.get("type") == "reddit_comment")
@@ -45,10 +53,17 @@ def build_email_body(cycle_summary: dict, abcd_status: dict, inbox_replies: list
     if sent:
         lines.append("TOP TARGETS:")
         for i, s in enumerate(sent[:8], 1):
-            platform = s.get("type","").replace("_"," ").title()
-            target = f"u/{s.get('author','?')}" if "reddit" in s.get("type","") else f"@{s.get('username','?')}"
-            lines.append(f"  {i}. {target} (r/{s.get('subreddit','?')} | Variant {s.get('variant','?')}) — {s.get('title','')[:55]}")
-            lines.append(f"     DM: {'yes' if s.get('dm_sent') else 'no'} | Comment: {'yes' if s.get('comment_sent') else 'no'}")
+            target = (
+                f"u/{s.get('author','?')}"
+                if "reddit" in s.get("type", "")
+                else f"@{s.get('username','?')}"
+            )
+            lines.append(
+                f"  {i}. {target} (r/{s.get('subreddit','?')} | Variant {s.get('variant','?')}) — {s.get('title','')[:55]}"
+            )
+            lines.append(
+                f"     DM: {'yes' if s.get('dm_sent') else 'no'} | Comment: {'yes' if s.get('comment_sent') else 'no'}"
+            )
         lines.append("")
 
     if inbox_replies:
@@ -80,8 +95,12 @@ def build_email_body(cycle_summary: dict, abcd_status: dict, inbox_replies: list
 
     account = cycle_summary.get("account_health", {})
     lines.append("ACCOUNT HEALTH:")
-    lines.append(f"  Reddit: {account.get('reddit_dms_today',0)} DMs today (limit: {account.get('reddit_dm_limit',0)}) | status: {account.get('reddit_status','active')}")
-    lines.append(f"  X: {account.get('x_replies_today',0)} replies today (limit: {account.get('x_limit',0)}) | session: {account.get('x_status','no session')}")
+    lines.append(
+        f"  Reddit: {account.get('reddit_dms_today',0)} DMs today (limit: {account.get('reddit_dm_limit',0)}) | status: {account.get('reddit_status','active')}"
+    )
+    lines.append(
+        f"  X: {account.get('x_replies_today',0)} replies today (limit: {account.get('x_limit',0)}) | session: {account.get('x_status','no session')}"
+    )
     lines.append("")
 
     if sharpener_note:
@@ -122,15 +141,19 @@ def send_email(subject: str, body: str) -> bool:
     return False
 
 
-def send_cycle_report(cycle_summary: dict, abcd_status: dict,
-                      inbox_replies: list, sharpener_note: str = "") -> bool:
+def send_cycle_report(
+    cycle_summary: dict,
+    abcd_status: dict,
+    inbox_replies: list,
+    sharpener_note: str = "",
+) -> bool:
     """Build and send the cycle digest email."""
     sent = cycle_summary.get("sent", [])
     if not sent and not inbox_replies:
         log.debug("Nothing to report this cycle")
         return False
 
-    reddit_count = sum(1 for s in sent if "reddit" in s.get("type",""))
+    reddit_count = sum(1 for s in sent if "reddit" in s.get("type", ""))
     x_count = sum(1 for s in sent if s.get("type") == "x_reply")
 
     subject = f"Outreach Report {_cdt_now()} — {reddit_count} Reddit + {x_count} X"

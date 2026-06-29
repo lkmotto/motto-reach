@@ -5,7 +5,9 @@ Scans Reddit + X, drafts via Ollama, sends with ABCD variants, reports by email.
 Usage: python3 agent.py --cycle
 Cron:  0 */2 * * * cd /opt/motto-outreach && python3 agent.py --cycle
 """
+
 from motto_common.sentry_init import init_sentry  # was: import sentry_init
+
 init_sentry(agent_name="motto-outreach")
 
 import sys
@@ -18,10 +20,10 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 # ── Paths ─────────────────────────────────────────────────────────────
-BASE       = Path(__file__).parent
+BASE = Path(__file__).parent
 STATE_FILE = BASE / "data" / "state.json"
 QUEUE_FILE = BASE / "data" / "queue.json"
-LOG_DIR    = BASE / "logs"
+LOG_DIR = BASE / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 # ── Logging ───────────────────────────────────────────────────────────
@@ -32,7 +34,7 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler(LOG_DIR / f"outreach_{today_str}.log"),
         logging.StreamHandler(sys.stdout),
-    ]
+    ],
 )
 log = logging.getLogger("agent")
 
@@ -43,7 +45,7 @@ def load_state() -> dict:
     return {
         "first_run_date": today_str,
         "days_running": 0,
-        "total_reddit_dms": 3,       # 3 already sent
+        "total_reddit_dms": 3,  # 3 already sent
         "total_reddit_comments": 0,
         "total_x_replies": 0,
         "seen_ids": ["1skn3n1", "1skl4ao", "1skq2bo", "1skoz7x", "1skpwak"],
@@ -105,7 +107,13 @@ def reset_daily_counts_if_new_day(state: dict) -> dict:
 
 def run_cycle(dry_run: bool = False):  # noqa: C901
     """Execute one full 2-hour outreach cycle."""
-    from ollama_client import available as ollama_available, draft_dm, draft_comment, draft_x_reply, draft_conversation_reply
+    from ollama_client import (
+        available as ollama_available,
+        draft_dm,
+        draft_comment,
+        draft_x_reply,
+        draft_conversation_reply,
+    )
     from abcd import sample_variant, record_send, get_status
     from reddit_client import scan_subreddits, send_dm, post_comment, check_inbox
     from x_client import scan_x, reply_to_tweet
@@ -119,7 +127,9 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
     limits = daily_limits(state.get("days_running", 0))
 
     log.info(f"Day {state['days_running']} limits: {limits}")
-    log.info(f"Today so far: DMs={state['today_dms']}, comments={state['today_comments']}, X={state['today_x_replies']}")
+    log.info(
+        f"Today so far: DMs={state['today_dms']}, comments={state['today_comments']}, X={state['today_x_replies']}"
+    )
 
     seen_ids = set(state.get("seen_ids", []))
     x_seen_ids = set(state.get("x_seen_ids", []))
@@ -135,10 +145,15 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
             new_replies = check_inbox()
             for reply in new_replies:
                 author = reply.get("author", "")
-                if not author: continue
+                if not author:
+                    continue
                 log.info(f"Reply from u/{author}: {reply['body'][:60]}")
                 # Draft suggested response via Ollama
-                suggested = draft_conversation_reply([], reply["body"]) if ollama_available() else ""
+                suggested = (
+                    draft_conversation_reply([], reply["body"])
+                    if ollama_available()
+                    else ""
+                )
                 reply["suggested_reply"] = suggested
                 inbox_replies.append(reply)
         except Exception as e:
@@ -165,8 +180,12 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
         seen_ids.add(post["id"])
 
         # Check limits
-        can_dm      = state["today_dms"] < limits["reddit_dms"] and post["author"] not in sent_to
-        can_comment = state["today_comments"] < limits["reddit_comments"] and post.get("comment_ok")
+        can_dm = (
+            state["today_dms"] < limits["reddit_dms"] and post["author"] not in sent_to
+        )
+        can_comment = state["today_comments"] < limits["reddit_comments"] and post.get(
+            "comment_ok"
+        )
 
         if not can_dm and not can_comment:
             log.info(f"  Skipping r/{post['subreddit']} post — limits reached")
@@ -179,8 +198,11 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
         dm_text = comment_text = ""
         if can_dm:
             dm_text = draft_dm(
-                post["title"], post["author"], post["subreddit"],
-                post.get("dfw", False), variant
+                post["title"],
+                post["author"],
+                post["subreddit"],
+                post.get("dfw", False),
+                variant,
             )
             if not dm_text:
                 # Template fallback
@@ -194,13 +216,21 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
 
         if can_comment:
             comment_text = draft_comment(
-                post["title"], post.get("body", ""), post["subreddit"],
-                post.get("intent", []), post.get("dfw", False), variant
+                post["title"],
+                post.get("body", ""),
+                post["subreddit"],
+                post.get("intent", []),
+                post.get("dfw", False),
+                variant,
             )
 
-        log.info(f"Processing: r/{post['subreddit']} by u/{post['author']} | variant {variant}")
-        if dm_text: log.info(f"  DM: {dm_text[:80]}...")
-        if comment_text: log.info(f"  Comment: {comment_text[:80]}...")
+        log.info(
+            f"Processing: r/{post['subreddit']} by u/{post['author']} | variant {variant}"
+        )
+        if dm_text:
+            log.info(f"  DM: {dm_text[:80]}...")
+        if comment_text:
+            log.info(f"  Comment: {comment_text[:80]}...")
 
         dm_sent = comment_sent = False
 
@@ -210,7 +240,9 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
                 comment_sent = post_comment(post["url"], comment_text)
                 if comment_sent:
                     state["today_comments"] += 1
-                    state["total_reddit_comments"] = state.get("total_reddit_comments", 0) + 1
+                    state["total_reddit_comments"] = (
+                        state.get("total_reddit_comments", 0) + 1
+                    )
                 time.sleep(random.uniform(20, 45))
 
             # Then DM
@@ -223,17 +255,23 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
                     record_send(variant, "dm")
                 time.sleep(random.uniform(60, 90))
 
-        cycle_sent.append({
-            "type": "reddit_dm" if dm_sent else "reddit_comment" if comment_sent else "reddit_queued",
-            "author": post["author"],
-            "subreddit": post["subreddit"],
-            "title": post["title"],
-            "url": post["url"],
-            "variant": variant,
-            "dm_sent": dm_sent,
-            "comment_sent": comment_sent,
-            "dm_preview": dm_text[:120] if dm_text else "",
-        })
+        cycle_sent.append(
+            {
+                "type": "reddit_dm"
+                if dm_sent
+                else "reddit_comment"
+                if comment_sent
+                else "reddit_queued",
+                "author": post["author"],
+                "subreddit": post["subreddit"],
+                "title": post["title"],
+                "url": post["url"],
+                "variant": variant,
+                "dm_sent": dm_sent,
+                "comment_sent": comment_sent,
+                "dm_preview": dm_text[:120] if dm_text else "",
+            }
+        )
 
     # ── 5. Process X posts ─────────────────────────────────────────
     for tweet in x_posts:
@@ -243,11 +281,15 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
             break
 
         reply_text = draft_x_reply(
-            tweet["text"], tweet["username"],
-            [], False  # X: no intent/geo tagging yet
+            tweet["text"],
+            tweet["username"],
+            [],
+            False,  # X: no intent/geo tagging yet
         )
         if not reply_text:
-            reply_text = "Licensed DFW appraiser here — happy to help with this. (817) 217-4375"
+            reply_text = (
+                "Licensed DFW appraiser here — happy to help with this. (817) 217-4375"
+            )
             reply_text = reply_text[:240]
 
         log.info(f"X reply to @{tweet['username']}: {reply_text[:60]}...")
@@ -260,14 +302,16 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
                 state["total_x_replies"] = state.get("total_x_replies", 0) + 1
             time.sleep(random.uniform(30, 60))
 
-        cycle_sent.append({
-            "type": "x_reply",
-            "username": tweet["username"],
-            "tweet": tweet["text"][:80],
-            "url": tweet["url"],
-            "reply": reply_text,
-            "sent": x_sent,
-        })
+        cycle_sent.append(
+            {
+                "type": "x_reply",
+                "username": tweet["username"],
+                "tweet": tweet["text"][:80],
+                "url": tweet["url"],
+                "reply": reply_text,
+                "sent": x_sent,
+            }
+        )
 
     # ── 6. Update state ────────────────────────────────────────────
     state["seen_ids"] = list(seen_ids)[-2000:]  # Keep last 2000
@@ -286,12 +330,20 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
             "reddit_status": "active",
             "x_replies_today": state["today_x_replies"],
             "x_limit": limits["x_replies"],
-            "x_status": "active" if (BASE / "data" / "x_session.json").exists() else "no session",
-        }
+            "x_status": "active"
+            if (BASE / "data" / "x_session.json").exists()
+            else "no session",
+        },
     }
 
-    sent_count = sum(1 for s in cycle_sent if s.get("dm_sent") or s.get("comment_sent") or s.get("sent"))
-    log.info(f"Cycle complete: {sent_count} sent | {len(inbox_replies)} replies received")
+    sent_count = sum(
+        1
+        for s in cycle_sent
+        if s.get("dm_sent") or s.get("comment_sent") or s.get("sent")
+    )
+    log.info(
+        f"Cycle complete: {sent_count} sent | {len(inbox_replies)} replies received"
+    )
 
     if not dry_run and (cycle_sent or inbox_replies):
         send_cycle_report(cycle_summary, abcd_status, inbox_replies)
@@ -306,6 +358,7 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
 
 
 # ── Sharpener (called separately once/day) ───────────────────────────
+
 
 def run_sharpener():
     """Daily loop: analyze last 24h of sends, propose improvements."""
@@ -339,16 +392,26 @@ def run_sharpener():
 
 if __name__ == "__main__":
     import sentry_sdk as _sentry_sdk
+
     try:
         parser = argparse.ArgumentParser()
-        parser.add_argument("--cycle",    action="store_true", help="Run one outreach cycle")
-        parser.add_argument("--sharpen",  action="store_true", help="Run daily sharpener analysis")
-        parser.add_argument("--dry-run",  action="store_true", help="Scan but don't send")
-        parser.add_argument("--status",   action="store_true", help="Print current state and ABCD status")
+        parser.add_argument(
+            "--cycle", action="store_true", help="Run one outreach cycle"
+        )
+        parser.add_argument(
+            "--sharpen", action="store_true", help="Run daily sharpener analysis"
+        )
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Scan but don't send"
+        )
+        parser.add_argument(
+            "--status", action="store_true", help="Print current state and ABCD status"
+        )
         args = parser.parse_args()
 
         if args.status:
             from abcd import format_report
+
             state = load_state()
             print(json.dumps(state, indent=2))
             print("\n" + format_report("dm"))
@@ -361,4 +424,3 @@ if __name__ == "__main__":
     except Exception as _exc:
         _sentry_sdk.capture_exception(_exc)
         raise
-

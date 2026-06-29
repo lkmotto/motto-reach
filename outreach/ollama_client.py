@@ -2,6 +2,7 @@
 ollama_client.py — Free inference via local Ollama
 Zero API cost. Luke Motto persona baked in.
 """
+
 import os
 import time
 import requests
@@ -83,9 +84,9 @@ def chat(messages: list, temperature: float = 0.72) -> str:
                     "temperature": temperature,
                     "num_predict": 450,
                     "top_p": 0.9,
-                }
+                },
             },
-            timeout=90
+            timeout=90,
         )
         if r.status_code == 200:
             content = r.json().get("message", {}).get("content", "").strip()
@@ -98,8 +99,14 @@ def chat(messages: list, temperature: float = 0.72) -> str:
     return ""
 
 
-def draft_comment(title: str, body: str, subreddit: str,
-                  intent_hits: list, is_dfw: bool, variant: str = "A") -> str:
+def draft_comment(
+    title: str,
+    body: str,
+    subreddit: str,
+    intent_hits: list,
+    is_dfw: bool,
+    variant: str = "A",
+) -> str:
     geo = "in DFW" if is_dfw else "(I cover all of DFW metro)"
 
     # ABCD variant framing
@@ -113,21 +120,25 @@ def draft_comment(title: str, body: str, subreddit: str,
 
     messages = [
         {"role": "system", "content": LUKE_SYSTEM},
-        {"role": "user", "content": (
-            f"Write a Reddit reply to this r/{subreddit} post.\n\n"
-            f"Title: {title}\n"
-            f"Body: {body[:400] if body else '(no body text)'}\n\n"
-            f"Context: You are a licensed appraiser {geo}. "
-            f"Intent signals: {', '.join(intent_hits[:2]) if intent_hits else 'real estate'}\n\n"
-            f"Variant instruction: {instruction}\n\n"
-            f"Write 2-3 short paragraphs."
-        )}
+        {
+            "role": "user",
+            "content": (
+                f"Write a Reddit reply to this r/{subreddit} post.\n\n"
+                f"Title: {title}\n"
+                f"Body: {body[:400] if body else '(no body text)'}\n\n"
+                f"Context: You are a licensed appraiser {geo}. "
+                f"Intent signals: {', '.join(intent_hits[:2]) if intent_hits else 'real estate'}\n\n"
+                f"Variant instruction: {instruction}\n\n"
+                f"Write 2-3 short paragraphs."
+            ),
+        },
     ]
     return chat(messages)
 
 
-def draft_dm(title: str, author: str, subreddit: str,
-             is_dfw: bool, variant: str = "A") -> str:
+def draft_dm(
+    title: str, author: str, subreddit: str, is_dfw: bool, variant: str = "A"
+) -> str:
     geo = "in DFW" if is_dfw else "across DFW metro"
 
     variant_instructions = {
@@ -140,13 +151,16 @@ def draft_dm(title: str, author: str, subreddit: str,
 
     messages = [
         {"role": "system", "content": LUKE_SYSTEM},
-        {"role": "user", "content": (
-            f"Write a 2-3 sentence Reddit DM to u/{author} "
-            f"who posted '{title}' in r/{subreddit}.\n\n"
-            f"Context: You're a licensed appraiser {geo}.\n"
-            f"Variant: {instruction}\n\n"
-            f"Sign as: Luke Motto, Licensed DFW Appraiser, (817) 217-4375"
-        )}
+        {
+            "role": "user",
+            "content": (
+                f"Write a 2-3 sentence Reddit DM to u/{author} "
+                f"who posted '{title}' in r/{subreddit}.\n\n"
+                f"Context: You're a licensed appraiser {geo}.\n"
+                f"Variant: {instruction}\n\n"
+                f"Sign as: Luke Motto, Licensed DFW Appraiser, (817) 217-4375"
+            ),
+        },
     ]
     return chat(messages, temperature=0.75)
 
@@ -155,11 +169,14 @@ def draft_x_reply(tweet: str, username: str, intent_hits: list, is_dfw: bool) ->
     geo = "in DFW" if is_dfw else ""
     messages = [
         {"role": "system", "content": LUKE_SYSTEM},
-        {"role": "user", "content": (
-            f"Write an X/Twitter reply to @{username} who tweeted: '{tweet}'\n\n"
-            f"Context: Licensed appraiser {geo}. Intent: {', '.join(intent_hits[:2])}.\n"
-            f"Max 240 characters. Helpful and specific. No hashtags. No pitch unless they asked."
-        )}
+        {
+            "role": "user",
+            "content": (
+                f"Write an X/Twitter reply to @{username} who tweeted: '{tweet}'\n\n"
+                f"Context: Licensed appraiser {geo}. Intent: {', '.join(intent_hits[:2])}.\n"
+                f"Max 240 characters. Helpful and specific. No hashtags. No pitch unless they asked."
+            ),
+        },
     ]
     reply = chat(messages, temperature=0.72)
     return reply[:240] if reply else ""
@@ -169,14 +186,19 @@ def draft_conversation_reply(history: list, new_message: str) -> str:
     """Continue an active conversation toward a service offer when appropriate."""
     messages = [{"role": "system", "content": LUKE_SYSTEM}]
     messages.extend(history)
-    messages.append({"role": "user", "content": (
-        f"They replied: '{new_message}'\n\n"
-        f"Continue the conversation. If they show buying intent (asking about "
-        f"cost, process, timeline, scheduling), guide toward "
-        f"mottoappraisal.cloud or (817) 217-4375. If not yet, ask one good "
-        f"follow-up question to understand their situation better. "
-        f"2-3 sentences max."
-    )})
+    messages.append(
+        {
+            "role": "user",
+            "content": (
+                f"They replied: '{new_message}'\n\n"
+                f"Continue the conversation. If they show buying intent (asking about "
+                f"cost, process, timeline, scheduling), guide toward "
+                f"mottoappraisal.cloud or (817) 217-4375. If not yet, ask one good "
+                f"follow-up question to understand their situation better. "
+                f"2-3 sentences max."
+            ),
+        }
+    )
     return chat(messages, temperature=0.78)
 
 
@@ -203,27 +225,35 @@ def sharpen(recent_sends: list) -> dict:
 
     summary = f"Total sends: {total}, replies: {replied} ({replied/total*100:.0f}% if total > 0 else 0)\n"
     for v, stats in by_variant.items():
-        rr = stats['replies']/stats['sends']*100 if stats['sends'] > 0 else 0
+        rr = stats["replies"] / stats["sends"] * 100 if stats["sends"] > 0 else 0
         summary += f"Variant {v}: {stats['sends']} sends, {stats['replies']} replies ({rr:.0f}%)\n"
 
     # Sample of actual messages
     sample = recent_sends[-5:] if len(recent_sends) >= 5 else recent_sends
-    examples = "\n".join([
-        f"[Variant {s.get('variant','?')}] {s.get('dm_preview','')[:100]} | replied: {s.get('replied', False)}"
-        for s in sample
-    ])
+    examples = "\n".join(
+        [
+            f"[Variant {s.get('variant','?')}] {s.get('dm_preview','')[:100]} | replied: {s.get('replied', False)}"
+            for s in sample
+        ]
+    )
 
     messages = [
-        {"role": "system", "content": "You are a conversion rate optimization expert for a local service business."},
-        {"role": "user", "content": (
-            f"Analyze these Reddit DM outreach results for a DFW real estate appraiser:\n\n"
-            f"PERFORMANCE:\n{summary}\n"
-            f"RECENT EXAMPLES:\n{examples}\n\n"
-            f"1. What pattern explains the reply rate differences between variants?\n"
-            f"2. Propose a specific Variant E message approach (2 sentences describing the strategy, not the actual message)\n"
-            f"3. Propose a Variant F approach based on what's working\n"
-            f"Keep observations to 2-3 sentences each."
-        )}
+        {
+            "role": "system",
+            "content": "You are a conversion rate optimization expert for a local service business.",
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Analyze these Reddit DM outreach results for a DFW real estate appraiser:\n\n"
+                f"PERFORMANCE:\n{summary}\n"
+                f"RECENT EXAMPLES:\n{examples}\n\n"
+                f"1. What pattern explains the reply rate differences between variants?\n"
+                f"2. Propose a specific Variant E message approach (2 sentences describing the strategy, not the actual message)\n"
+                f"3. Propose a Variant F approach based on what's working\n"
+                f"Keep observations to 2-3 sentences each."
+            ),
+        },
     ]
     analysis = chat(messages, temperature=0.5)
     return {"timestamp": time.time(), "analysis": analysis, "stats": by_variant}

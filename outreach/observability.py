@@ -4,6 +4,7 @@ Call init_observability("<agent-name>") once at startup. Every LLM call wrapped
 in `@traced` (or manually with `tracer.start_as_current_span`) is then visible
 in Langfuse with cost, latency, prompt, and completion.
 """
+
 import os
 import binascii
 from opentelemetry import trace
@@ -25,7 +26,10 @@ def init_observability(service_name: str) -> trace.Tracer:
     if trace.get_tracer_provider().__class__.__name__ == "TracerProvider":
         return trace.get_tracer(service_name)
 
-    endpoint = os.getenv("LANGFUSE_OTEL_ENDPOINT", "https://us.cloud.langfuse.com/api/public/otel/v1/traces")
+    endpoint = os.getenv(
+        "LANGFUSE_OTEL_ENDPOINT",
+        "https://us.cloud.langfuse.com/api/public/otel/v1/traces",
+    )
     pk = os.getenv("LANGFUSE_PUBLIC_KEY")
     sk = os.getenv("LANGFUSE_SECRET_KEY")
 

@@ -7,7 +7,9 @@ with lessons learned so each day's outreach is smarter than the last.
 Usage: python3 sharpener.py
 Cron:  0 11 * * * cd /opt/motto-outreach && python3 sharpener.py
 """
+
 from motto_common.sentry_init import init_sentry  # was: import sentry_init
+
 init_sentry(agent_name="motto-outreach")
 
 import json
@@ -16,9 +18,9 @@ import logging
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-BASE       = Path(__file__).parent
-LOG_DIR    = BASE / "logs"
-DATA_DIR   = BASE / "data"
+BASE = Path(__file__).parent
+LOG_DIR = BASE / "logs"
+DATA_DIR = BASE / "data"
 LOG_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 
@@ -29,17 +31,18 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler(LOG_DIR / f"sharpener_{today_str}.log"),
         logging.StreamHandler(sys.stdout),
-    ]
+    ],
 )
 log = logging.getLogger("sharpener")
 
-SHARPENER_LOG  = DATA_DIR / "sharpener_log.jsonl"
-PROMPT_LOG     = DATA_DIR / "prompt_evolution.jsonl"
+SHARPENER_LOG = DATA_DIR / "sharpener_log.jsonl"
+PROMPT_LOG = DATA_DIR / "prompt_evolution.jsonl"
 OLLAMA_PERSONA = DATA_DIR / "ollama_persona.txt"
 
 # ─────────────────────────────────────────────────────────────────────
 # Load recent sends
 # ─────────────────────────────────────────────────────────────────────
+
 
 def load_recent_sends(max_files: int = 2) -> list:
     """Load JSONL send logs from the last N days."""
@@ -73,6 +76,7 @@ def load_abcd_state() -> dict:
 # Core analysis via Ollama
 # ─────────────────────────────────────────────────────────────────────
 
+
 def analyze_and_sharpen(sends: list, abcd_state: dict) -> dict | None:
     """
     Feed send history to Ollama and extract:
@@ -82,6 +86,7 @@ def analyze_and_sharpen(sends: list, abcd_state: dict) -> dict | None:
     """
     try:
         from ollama_client import sharpen as ollama_sharpen
+
         analysis = ollama_sharpen(sends)
         if not analysis:
             log.warning("Ollama returned empty sharpener analysis")
@@ -121,6 +126,7 @@ Communication principles:
 - Match the casual tone of Reddit/X; don't sound like a corporate email
 """
 
+
 def update_persona(analysis: dict) -> str:
     """Append learned lessons to the persona file."""
     try:
@@ -153,11 +159,16 @@ def update_persona(analysis: dict) -> str:
 
         # Log this evolution
         with open(PROMPT_LOG, "a") as f:
-            f.write(json.dumps({
-                "date": timestamp,
-                "lessons": lessons,
-                "analysis_snippet": analysis.get("analysis", "")[:300],
-            }) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "date": timestamp,
+                        "lessons": lessons,
+                        "analysis_snippet": analysis.get("analysis", "")[:300],
+                    }
+                )
+                + "\n"
+            )
 
         return updated
 
@@ -169,6 +180,7 @@ def update_persona(analysis: dict) -> str:
 # ─────────────────────────────────────────────────────────────────────
 # Ollama Modelfile rebuild (re-trains custom model with updated persona)
 # ─────────────────────────────────────────────────────────────────────
+
 
 def rebuild_ollama_model(persona_text: str):
     """
@@ -192,14 +204,18 @@ PARAMETER num_predict 256
     try:
         result = subprocess.run(
             ["ollama", "create", "luke-motto", "-f", str(modelfile_path)],
-            capture_output=True, text=True, timeout=120
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         if result.returncode == 0:
             log.info("Ollama model 'luke-motto' rebuilt successfully")
         else:
             log.error(f"Ollama create failed: {result.stderr[:300]}")
     except FileNotFoundError:
-        log.warning("ollama binary not found — model rebuild skipped (running without Ollama)")
+        log.warning(
+            "ollama binary not found — model rebuild skipped (running without Ollama)"
+        )
     except subprocess.TimeoutExpired:
         log.warning("Ollama create timed out after 120s — may still be building")
     except Exception as e:
@@ -210,6 +226,7 @@ PARAMETER num_predict 256
 # ABCD feedback loop: adjust priors based on send outcomes
 # ─────────────────────────────────────────────────────────────────────
 
+
 def abcd_feedback(sends: list):
     """
     Infer variant outcomes from send logs:
@@ -217,7 +234,8 @@ def abcd_feedback(sends: list):
     - Adjust Thompson Sampling priors in abcd_state.json
     """
     try:
-        from abcd import record_reply, get_status
+        from abcd import record_reply
+
         replies_found = 0
         for send in sends:
             # If the JSONL contains a 'got_reply' flag (set by inbox checker)
@@ -228,7 +246,9 @@ def abcd_feedback(sends: list):
         if replies_found > 0:
             log.info(f"ABCD feedback: recorded {replies_found} positive outcomes")
         else:
-            log.info("ABCD feedback: no confirmed replies in log — posteriors unchanged")
+            log.info(
+                "ABCD feedback: no confirmed replies in log — posteriors unchanged"
+            )
 
     except ImportError:
         log.warning("abcd module not available for feedback")
@@ -240,15 +260,16 @@ def abcd_feedback(sends: list):
 # Stats report helper
 # ─────────────────────────────────────────────────────────────────────
 
+
 def print_stats(sends: list, abcd_state: dict):
     """Print a human-readable summary to stdout/log."""
-    total   = len(sends)
-    dms     = sum(1 for s in sends if s.get("dm_sent"))
+    total = len(sends)
+    dms = sum(1 for s in sends if s.get("dm_sent"))
     comments = sum(1 for s in sends if s.get("comment_sent"))
-    x_sent  = sum(1 for s in sends if s.get("type") == "x_reply" and s.get("sent"))
-    replies  = sum(1 for s in sends if s.get("got_reply"))
+    x_sent = sum(1 for s in sends if s.get("type") == "x_reply" and s.get("sent"))
+    replies = sum(1 for s in sends if s.get("got_reply"))
 
-    log.info("="*50)
+    log.info("=" * 50)
     log.info(f"48-hour stats  —  {today_str}")
     log.info(f"  Total actions : {total}")
     log.info(f"  Reddit DMs    : {dms}")
@@ -261,16 +282,17 @@ def print_stats(sends: list, abcd_state: dict):
         log.info(f"  ABCD [{channel}]:")
         for var_id, v in variants.items():
             alpha = v.get("alpha", 1)
-            beta  = v.get("beta", 1)
-            mean  = alpha / (alpha + beta)
+            beta = v.get("beta", 1)
+            mean = alpha / (alpha + beta)
             log.info(f"    Variant {var_id}: α={alpha} β={beta} → mean={mean:.2%}")
 
-    log.info("="*50)
+    log.info("=" * 50)
 
 
 # ─────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────
+
 
 def main():
     log.info("Sharpener starting...")
@@ -302,11 +324,10 @@ def main():
 
     # Persist analysis
     with open(SHARPENER_LOG, "a") as f:
-        f.write(json.dumps({
-            "date": today_str,
-            "sends_analyzed": len(sends),
-            **analysis
-        }) + "\n")
+        f.write(
+            json.dumps({"date": today_str, "sends_analyzed": len(sends), **analysis})
+            + "\n"
+        )
 
     log.info(f"Analysis: {analysis.get('analysis', '')[:200]}")
 
@@ -320,9 +341,9 @@ def main():
 
 if __name__ == "__main__":
     import sentry_sdk as _sentry_sdk
+
     try:
         main()
     except Exception as _exc:
         _sentry_sdk.capture_exception(_exc)
         raise
-

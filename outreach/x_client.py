@@ -6,6 +6,7 @@ Session file: data/x_session.json (needs to be created via login)
 X strategy: Reply to intent posts ONLY (no DMs — requires $100/mo API).
 Replies are public, build your profile, zero ban risk vs DMs.
 """
+
 import json
 import time
 import random
@@ -35,21 +36,45 @@ INTENT_QUERIES = [
 ]
 
 HIGH_INTENT_X = [
-    "need appraiser", "appraisal", "home value", "house worth",
-    "dscr", "brrrr", "arv", "pmi removal", "heloc", "refi",
-    "tax protest", "dcad", "tcad", "pre-listing", "divorce home",
+    "need appraiser",
+    "appraisal",
+    "home value",
+    "house worth",
+    "dscr",
+    "brrrr",
+    "arv",
+    "pmi removal",
+    "heloc",
+    "refi",
+    "tax protest",
+    "dcad",
+    "tcad",
+    "pre-listing",
+    "divorce home",
 ]
 
 DFW_GEO_X = [
-    "dfw", "dallas", "fort worth", "tarrant", "denton",
-    "keller", "southlake", "roanoke", "trophy club", "north texas",
+    "dfw",
+    "dallas",
+    "fort worth",
+    "tarrant",
+    "denton",
+    "keller",
+    "southlake",
+    "roanoke",
+    "trophy club",
+    "north texas",
 ]
+
 
 # Daily ramp: start conservative, increase over 2 weeks
 def daily_x_limit(days_running: int) -> int:
-    if days_running <= 3: return 8
-    if days_running <= 7: return 15
-    if days_running <= 14: return 20
+    if days_running <= 3:
+        return 8
+    if days_running <= 7:
+        return 15
+    if days_running <= 14:
+        return 20
     return 25
 
 
@@ -65,14 +90,20 @@ def login(page) -> bool:
 
     try:
         # Username step
-        page.locator('input[autocomplete="username"], input[name="text"]').first.fill(X_USERNAME)
+        page.locator('input[autocomplete="username"], input[name="text"]').first.fill(
+            X_USERNAME
+        )
         time.sleep(0.5)
-        page.locator('button:has-text("Next"), [data-testid="LoginForm_Login_Button"]').first.click()
+        page.locator(
+            'button:has-text("Next"), [data-testid="LoginForm_Login_Button"]'
+        ).first.click()
         time.sleep(2)
 
         # Sometimes asks for phone/email verification — enter username again
         try:
-            verify_box = page.locator('input[data-testid="ocfEnterTextTextInput"]').first
+            verify_box = page.locator(
+                'input[data-testid="ocfEnterTextTextInput"]'
+            ).first
             if verify_box.is_visible(timeout=3000):
                 verify_box.fill(X_USERNAME)
                 page.locator('button:has-text("Next")').first.click()
@@ -81,9 +112,13 @@ def login(page) -> bool:
             pass
 
         # Password step
-        page.locator('input[name="password"], input[type="password"]').first.fill(X_PASSWORD)
+        page.locator('input[name="password"], input[type="password"]').first.fill(
+            X_PASSWORD
+        )
         time.sleep(0.5)
-        page.locator('button:has-text("Log in"), [data-testid="LoginForm_Login_Button"]').first.click()
+        page.locator(
+            'button:has-text("Log in"), [data-testid="LoginForm_Login_Button"]'
+        ).first.click()
         time.sleep(3)
 
         # Verify
@@ -110,8 +145,10 @@ def _score_tweet(text: str, is_dfw: bool = False) -> int:
     lower = text.lower()
     sc = sum(10 for s in HIGH_INTENT_X if s in lower)
     sc += sum(8 for s in DFW_GEO_X if s in lower)
-    if is_dfw: sc += 5
-    if "?" in text: sc += 5
+    if is_dfw:
+        sc += 5
+    if "?" in text:
+        sc += 5
     return sc
 
 
@@ -123,20 +160,27 @@ def scan_x(seen_ids: set) -> list:
 
     results = []
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True, args=["--no-sandbox","--disable-dev-shm-usage"])
+        browser = pw.chromium.launch(
+            headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
+        )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            viewport={"width":1280,"height":800}
+            viewport={"width": 1280, "height": 800},
         )
-        context.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});")
+        context.add_init_script(
+            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
+        )
         _load_session(context)
         page = context.new_page()
 
         for query in INTENT_QUERIES[:5]:  # Limit to 5 queries per cycle
             try:
-                encoded = query.replace(" ", "%20").replace('"', '%22')
-                page.goto(f"https://x.com/search?q={encoded}&f=live",
-                         wait_until="domcontentloaded", timeout=20000)
+                encoded = query.replace(" ", "%20").replace('"', "%22")
+                page.goto(
+                    f"https://x.com/search?q={encoded}&f=live",
+                    wait_until="domcontentloaded",
+                    timeout=20000,
+                )
                 time.sleep(random.uniform(2, 3))
 
                 # Scroll to load tweets
@@ -168,23 +212,30 @@ def scan_x(seen_ids: set) -> list:
 
                 for tweet in tweets:
                     tid = tweet.get("id", "")
-                    if not tid or tid in seen_ids: continue
-                    if tweet.get("username") == X_USERNAME: continue  # Skip own tweets
+                    if not tid or tid in seen_ids:
+                        continue
+                    if tweet.get("username") == X_USERNAME:
+                        continue  # Skip own tweets
 
                     sc = _score_tweet(tweet["text"])
-                    if sc < 10: continue
+                    if sc < 10:
+                        continue
 
                     seen_ids.add(tid)
-                    results.append({
-                        "id": tid,
-                        "platform": "x",
-                        "text": tweet["text"][:300],
-                        "url": tweet["url"],
-                        "username": tweet["username"],
-                        "score": sc,
-                        "query": query,
-                    })
-                    log.info(f"  X hit [{sc}pts] @{tweet['username']}: {tweet['text'][:55]}")
+                    results.append(
+                        {
+                            "id": tid,
+                            "platform": "x",
+                            "text": tweet["text"][:300],
+                            "url": tweet["url"],
+                            "username": tweet["username"],
+                            "score": sc,
+                            "query": query,
+                        }
+                    )
+                    log.info(
+                        f"  X hit [{sc}pts] @{tweet['username']}: {tweet['text'][:55]}"
+                    )
 
                 time.sleep(random.uniform(3, 6))
 
@@ -204,12 +255,16 @@ def reply_to_tweet(tweet_url: str, reply_text: str) -> bool:
         return False
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True, args=["--no-sandbox","--disable-dev-shm-usage"])
+        browser = pw.chromium.launch(
+            headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
+        )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            viewport={"width":1280,"height":800}
+            viewport={"width": 1280, "height": 800},
         )
-        context.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});")
+        context.add_init_script(
+            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
+        )
         _load_session(context)
         page = context.new_page()
 
@@ -223,8 +278,10 @@ def reply_to_tweet(tweet_url: str, reply_text: str) -> bool:
             time.sleep(random.uniform(1, 2))
 
             # Type reply
-            reply_box = page.locator('[data-testid="tweetTextarea_0"], '
-                                     'div[role="textbox"][data-testid*="reply"]').first
+            reply_box = page.locator(
+                '[data-testid="tweetTextarea_0"], '
+                'div[role="textbox"][data-testid*="reply"]'
+            ).first
             reply_box.click()
             for char in reply_text:
                 page.keyboard.type(char)

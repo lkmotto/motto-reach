@@ -3,6 +3,7 @@ abcd.py — Thompson Sampling ABCD experiment tracker
 Tracks 4 message variants. Sends more traffic to winners automatically.
 State persists in data/abcd_state.json.
 """
+
 import json
 import random
 import time
@@ -47,11 +48,21 @@ def _load() -> dict:
     # Initialize with weak priors — slight advantage to A (control) as prior
     return {
         "channel_dm": {
-            v: {"alpha": 1.2 if v == "A" else 1.0, "beta": 1.0, "sends": 0, "replies": 0}
+            v: {
+                "alpha": 1.2 if v == "A" else 1.0,
+                "beta": 1.0,
+                "sends": 0,
+                "replies": 0,
+            }
             for v in VARIANTS
         },
         "channel_comment": {
-            v: {"alpha": 1.2 if v == "A" else 1.0, "beta": 1.0, "sends": 0, "replies": 0}
+            v: {
+                "alpha": 1.2 if v == "A" else 1.0,
+                "beta": 1.0,
+                "sends": 0,
+                "replies": 0,
+            }
             for v in VARIANTS
         },
         "experiment_start": time.time(),
@@ -112,11 +123,13 @@ def record_reply(variant: str, channel: str = "dm", positive: bool = True):
         state[key][variant]["replies"] += 1
         state["total_replies"] += 1
     else:
-        state[key][variant]["beta"] += 1   # failure
+        state[key][variant]["beta"] += 1  # failure
 
     state["last_updated"] = time.time()
     _save(state)
-    log.info(f"Recorded {'positive' if positive else 'negative'} reply for variant {variant} ({channel})")
+    log.info(
+        f"Recorded {'positive' if positive else 'negative'} reply for variant {variant} ({channel})"
+    )
 
 
 def get_status(channel: str = "dm") -> dict:
@@ -132,8 +145,10 @@ def get_status(channel: str = "dm") -> dict:
     n_samples = 1000
     win_counts = {v: 0 for v in variants_data}
     for _ in range(n_samples):
-        draws = {v: random.betavariate(stats["alpha"], stats["beta"])
-                 for v, stats in variants_data.items()}
+        draws = {
+            v: random.betavariate(stats["alpha"], stats["beta"])
+            for v, stats in variants_data.items()
+        }
         winner = max(draws, key=draws.get)
         win_counts[winner] += 1
 
@@ -168,8 +183,12 @@ def format_report(channel: str = "dm") -> str:
     if not status:
         return "No experiment data yet."
 
-    lines = [f"ABCD EXPERIMENT ({channel.upper()}) — {status['days_running']} days running"]
-    lines.append(f"Total: {status['total_sends']} sends, {status['total_replies']} replies")
+    lines = [
+        f"ABCD EXPERIMENT ({channel.upper()}) — {status['days_running']} days running"
+    ]
+    lines.append(
+        f"Total: {status['total_sends']} sends, {status['total_replies']} replies"
+    )
     lines.append("")
 
     for v_id, v in status["variants"].items():
@@ -180,6 +199,8 @@ def format_report(channel: str = "dm") -> str:
             f"{v['reply_rate']}% rate | P(best)={v['p_best']}%{leader_tag}"
         )
 
-    lines.append(f"\nCurrent allocation: sending more to Variant {status['leader']} "
-                 f"(P(best) = {status['leader_p_best']}%)")
+    lines.append(
+        f"\nCurrent allocation: sending more to Variant {status['leader']} "
+        f"(P(best) = {status['leader_p_best']}%)"
+    )
     return "\n".join(lines)
