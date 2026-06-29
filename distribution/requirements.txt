@@ -1,0 +1,5 @@
+anthropic>=0.100.0
+requests>=2.33.1
+praw>=7.8.1
+python-dotenv>=1.2.2
+sentry-sdk[asyncio]>=2.59.0

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+secrets/
+logs/
+state/
+*.egg-info/
+.DS_Store
+# Never commit credentials
+credentials/
+cron_tracking/*/
+!cron_tracking/distribution_log.md
