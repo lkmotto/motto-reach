@@ -3,7 +3,10 @@ abcd.py — Thompson Sampling ABCD experiment tracker
 Tracks 4 message variants. Sends more traffic to winners automatically.
 State persists in data/abcd_state.json.
 """
-import json, math, random, time, logging
+import json
+import random
+import time
+import logging
 from pathlib import Path
 
 log = logging.getLogger("abcd")

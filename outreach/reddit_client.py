@@ -2,9 +2,12 @@
 reddit_client.py — Playwright-based Reddit client using saved session cookie
 Session: /home/user/workspace/motto-reddit/fast_session.json (valid Oct 2026)
 """
-import json, time, random, logging
+import json
+import time
+import random
+import logging
 from pathlib import Path
-from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+from playwright.sync_api import sync_playwright
 
 log = logging.getLogger("reddit")
 SESSION_FILE = Path("/home/user/workspace/motto-reddit/fast_session.json")

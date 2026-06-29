@@ -2,7 +2,10 @@
 ollama_client.py — Free inference via local Ollama
 Zero API cost. Luke Motto persona baked in.
 """
-import os, json, time, requests, logging
+import os
+import time
+import requests
+import logging
 
 log = logging.getLogger("ollama")
 

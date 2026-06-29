@@ -5,9 +5,15 @@ Scans Reddit + X, drafts via Ollama, sends with ABCD variants, reports by email.
 Usage: python3 agent.py --cycle
 Cron:  0 */2 * * * cd /opt/motto-outreach && python3 agent.py --cycle
 """
-import sentry_init  # noqa: E402,F401
+from motto_common.sentry_init import init_sentry  # was: import sentry_init
+init_sentry(agent_name="motto-outreach")
 
-import os, sys, json, time, random, logging, argparse
+import sys
+import json
+import time
+import random
+import logging
+import argparse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
@@ -100,7 +106,7 @@ def reset_daily_counts_if_new_day(state: dict) -> dict:
 def run_cycle(dry_run: bool = False):  # noqa: C901
     """Execute one full 2-hour outreach cycle."""
     from ollama_client import available as ollama_available, draft_dm, draft_comment, draft_x_reply, draft_conversation_reply
-    from abcd import sample_variant, record_send, record_reply, get_status, format_report
+    from abcd import sample_variant, record_send, get_status
     from reddit_client import scan_subreddits, send_dm, post_comment, check_inbox
     from x_client import scan_x, reply_to_tweet
     from reporter import send_cycle_report
@@ -241,7 +247,7 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
             [], False  # X: no intent/geo tagging yet
         )
         if not reply_text:
-            reply_text = f"Licensed DFW appraiser here — happy to help with this. (817) 217-4375"
+            reply_text = "Licensed DFW appraiser here — happy to help with this. (817) 217-4375"
             reply_text = reply_text[:240]
 
         log.info(f"X reply to @{tweet['username']}: {reply_text[:60]}...")
@@ -304,7 +310,6 @@ def run_cycle(dry_run: bool = False):  # noqa: C901
 def run_sharpener():
     """Daily loop: analyze last 24h of sends, propose improvements."""
     from ollama_client import sharpen
-    from abcd import get_status
 
     log.info("Running daily sharpener...")
 
@@ -327,7 +332,7 @@ def run_sharpener():
         sharpener_log = BASE / "data" / "sharpener_log.jsonl"
         with open(sharpener_log, "a") as f:
             f.write(json.dumps(analysis) + "\n")
-        log.info(f"Sharpener analysis written")
+        log.info("Sharpener analysis written")
         if analysis.get("analysis"):
             log.info(f"  {analysis['analysis'][:200]}...")
 

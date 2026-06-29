@@ -4,7 +4,10 @@ Sends a plain-text summary after each cycle where something was sent.
 Uses smtplib with Gmail App Password (env: GMAIL_APP_PASSWORD).
 Falls back to writing a pending_report.json for the Perplexity connector to send.
 """
-import os, json, smtplib, logging
+import os
+import json
+import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
@@ -115,7 +118,7 @@ def send_email(subject: str, body: str) -> bool:
     # Fallback: write to pending file for Perplexity connector
     PENDING_FILE.parent.mkdir(exist_ok=True)
     PENDING_FILE.write_text(json.dumps({"subject": subject, "body": body}))
-    log.info(f"Email queued in pending_report.json (GMAIL_APP_PASSWORD not set)")
+    log.info("Email queued in pending_report.json (GMAIL_APP_PASSWORD not set)")
     return False
 
 

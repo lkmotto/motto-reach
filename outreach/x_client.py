@@ -6,7 +6,11 @@ Session file: data/x_session.json (needs to be created via login)
 X strategy: Reply to intent posts ONLY (no DMs — requires $100/mo API).
 Replies are public, build your profile, zero ban risk vs DMs.
 """
-import json, time, random, logging, os
+import json
+import time
+import random
+import logging
+import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 

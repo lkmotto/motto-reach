@@ -11,7 +11,8 @@ import sys as _sys  # noqa: E402
 import pathlib as _pathlib  # noqa: E402
 
 _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
-import sentry_init  # noqa: E402,F401
+from motto_common.sentry_init import init_sentry  # was: import sentry_init
+init_sentry(agent_name="motto-distribution")
 
 import os
 from typing import Optional
