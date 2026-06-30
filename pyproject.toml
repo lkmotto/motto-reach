@@ -21,6 +21,9 @@ omit = ["tests/*"]
 fail_under = 50
 show_missing = true
 
+[tool.setuptools.packages.find]
+include = ["distribution*", "outreach*"]
+
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
